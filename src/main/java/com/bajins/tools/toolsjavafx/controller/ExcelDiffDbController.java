@@ -12,6 +12,8 @@ import com.bajins.tools.toolsjavafx.utils.JfxTableFilterUtils;
 import com.bajins.tools.toolsjavafx.utils.JfxUtils;
 import com.bajins.tools.toolsjavafx.utils.ToastUtils;
 import com.solubris.typedtuples.mutable.MutableQuintuple;
+import com.solubris.typedtuples.mutable.MutableSeptuple;
+import com.solubris.typedtuples.mutable.MutableSextuple;
 import com.solubris.typedtuples.mutable.MutableTuple;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -566,33 +568,32 @@ public class ExcelDiffDbController {
         }
 
         // 根据用户分组统计值
-        Map<String, MutableQuintuple<String, Integer, Integer, Integer, BigDecimal>> sumOnlyMap = new HashMap<>();
+        Map<String, MutableSextuple<String, String, Integer, Integer, Integer, BigDecimal>> sumOnlyMap = new HashMap<>();
         HashSet<String> leadPrjQtySet = new HashSet<>();
         HashSet<String> asstPrjQtySet = new HashSet<>();
         for (MainData mainData : mainTableList) {
             String userCode = mainData.getUserCode();
-            String userName = mainData.getUserName();
 
             if (StrUtil.isBlank(mainData.getPrjAmount())) {
                 continue;
             }
-            MutableQuintuple<String, Integer, Integer, Integer, BigDecimal> sumOnly = sumOnlyMap.computeIfAbsent(userCode, k -> MutableTuple.of(userName, 0, 0, 0, BigDecimal.ZERO));
+            MutableSextuple<String, String, Integer, Integer, Integer, BigDecimal> sumOnly = sumOnlyMap.computeIfAbsent(userCode, _ -> MutableTuple.of(mainData.getUserName(), mainData.getDevRegion(), 0, 0, 0, BigDecimal.ZERO));
 
             String key = userCode + mainData.getPmProjectCode();
             if (userCode.equals(mainData.getLeadUserCode())) {
                 // 主担项目
                 if (!leadPrjQtySet.contains(key)) {
-                    sumOnly.setThird(sumOnly.getThird() + 1);
+                    sumOnly.setFourth(sumOnly.getFourth() + 1);
                     leadPrjQtySet.add(key);
                 }
             } else if (!asstPrjQtySet.contains(key)) {
                 // 协从项目
-                sumOnly.setFourth(sumOnly.getFourth() + 1);
+                sumOnly.setFifth(sumOnly.getFifth() + 1);
                 asstPrjQtySet.add(key);
             }
-            sumOnly.setSecond(sumOnly.getThird() + sumOnly.getFourth());
+            sumOnly.setThird(sumOnly.getFourth() + sumOnly.getFifth());
             BigDecimal ujAmount = new BigDecimal(mainData.getUjAmount());
-            sumOnly.setFifth(sumOnly.getFifth().add(ujAmount));
+            sumOnly.setSixth(sumOnly.getSixth().add(ujAmount));
         }
         if (sumOnlyMap.isEmpty()) {
             ToastUtils.alertInfo("没有找到符合条件的数据");
@@ -600,16 +601,17 @@ public class ExcelDiffDbController {
         }
         // 对过滤的数据进行包装排序
         ObservableList<UserAmountData> finishedData = FXCollections.observableArrayList();
-        for (Map.Entry<String, MutableQuintuple<String, Integer, Integer, Integer, BigDecimal>> entry : sumOnlyMap.entrySet()) {
+        for (Map.Entry<String, MutableSextuple<String, String, Integer, Integer, Integer, BigDecimal>> entry : sumOnlyMap.entrySet()) {
             String userCode = entry.getKey();
 
-            MutableQuintuple<String, Integer, Integer, Integer, BigDecimal> value = entry.getValue();
+            MutableSextuple<String, String, Integer, Integer, Integer, BigDecimal> value = entry.getValue();
             String userName = value.getFirst();
-            String totalPrjQty = Integer.toString(value.getSecond());
-            String leadPrjQty = Integer.toString(value.getThird());
-            String asstPrjQty = Integer.toString(value.getFourth());
-            String amount = value.getFifth().toPlainString();
-            finishedData.add(new UserAmountData(userCode, userName, totalPrjQty, leadPrjQty, asstPrjQty, amount));
+            String devRegion = value.getSecond();
+            String totalPrjQty = Integer.toString(value.getThird());
+            String leadPrjQty = Integer.toString(value.getFourth());
+            String asstPrjQty = Integer.toString(value.getFifth());
+            String amount = value.getSixth().toPlainString();
+            finishedData.add(new UserAmountData(userCode, userName, devRegion, totalPrjQty, leadPrjQty, asstPrjQty, amount));
         }
         // 降序排序（从大到小）
         finishedData.sort((o1, o2) -> {

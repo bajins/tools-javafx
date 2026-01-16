@@ -29,6 +29,14 @@ public class UserAmountData {
     private final StringProperty userName;
 
     @TableCol(
+            value = "用户区域",
+            width = 50,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty devRegion;
+
+    @TableCol(
             value = "总项目数",
             width = 50,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
@@ -65,9 +73,10 @@ public class UserAmountData {
     )
     private final StringProperty amount;
 
-    public UserAmountData(String userCode, String userName, String totalPrjQty, String leadPrjQty, String asstPrjQty, String amount) {
+    public UserAmountData(String userCode, String userName, String devRegion, String totalPrjQty, String leadPrjQty, String asstPrjQty, String amount) {
         this.userCode = new SimpleStringProperty(userCode);
         this.userName = new SimpleStringProperty(userName);
+        this.devRegion = new SimpleStringProperty(devRegion);
         this.totalPrjQty = new SimpleStringProperty(totalPrjQty);
         this.leadPrjQty = new SimpleStringProperty(leadPrjQty);
         this.asstPrjQty = new SimpleStringProperty(asstPrjQty);
@@ -88,6 +97,14 @@ public class UserAmountData {
 
     public StringProperty userNameProperty() {
         return userName;
+    }
+
+    public String getDevRegion() {
+        return devRegion.get();
+    }
+
+    public StringProperty devRegionProperty() {
+        return devRegion;
     }
 
     public String getTotalPrjQty() {

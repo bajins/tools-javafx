@@ -31,7 +31,7 @@ public class MainData {
 
     @TableCol(
             value = "用户区域",
-            width = 100,
+            width = 50,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
             alignment = "CENTER"
     )
