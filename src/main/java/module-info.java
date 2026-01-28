@@ -13,7 +13,6 @@ module com.bajins.tools.toolsjavafx {
     requires cn.hutool;
     requires java.sql;
     requires org.apache.commons.lang3;
-    requires typedtuples;
 
     opens com.bajins.tools.toolsjavafx to javafx.fxml, org.controlsfx.controls;
     exports com.bajins.tools.toolsjavafx;

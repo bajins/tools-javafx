@@ -11,10 +11,6 @@ import com.bajins.tools.toolsjavafx.model.UserAmountData;
 import com.bajins.tools.toolsjavafx.utils.JfxTableFilterUtils;
 import com.bajins.tools.toolsjavafx.utils.JfxUtils;
 import com.bajins.tools.toolsjavafx.utils.ToastUtils;
-import com.solubris.typedtuples.mutable.MutableQuintuple;
-import com.solubris.typedtuples.mutable.MutableSeptuple;
-import com.solubris.typedtuples.mutable.MutableSextuple;
-import com.solubris.typedtuples.mutable.MutableTuple;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -393,12 +389,15 @@ public class ExcelDiffDbController {
                         ),
                         uph as (
                             select uh.user_code, iu.user_name, uh.pm_project_code, uh.pm_dev_hours, ph.pm_prj_hours, pp.pm_region, pr.pm_region_name, pp.pm_project_name
+                            , iu.dept_code, dp.dept_name, dp.parent_dept_code, pdp.dept_name parent_dept_name
                             from uh
                             join ims_user iu on iu.user_code=uh.user_code
                             join ph on ph.pm_project_code=uh.pm_project_code
                             join pm_project pp on pp.pm_project_code=uh.pm_project_code
                             left join pm_emp pe on pe.user_code=uh.user_code
                             left join pm_region pr on pr.pm_region_code=pe.pm_region_code
+                            join ims_dept dp on dp.dept_code=iu.dept_code
+                            left join ims_dept pdp on pdp.dept_code=dp.parent_dept_code
                         ),
                         ld as (
                             select
@@ -407,6 +406,7 @@ public class ExcelDiffDbController {
                                 tpp.pm_region_code,
                                 peu.user_name,
                                 pr.pm_region_name
+                                , peu.dept_code, dp.dept_name, dp.parent_dept_code, pdp.dept_name parent_dept_name
                             from (
                                 select
                                     ppe.pm_project_code,
@@ -423,9 +423,12 @@ public class ExcelDiffDbController {
                             ) tpp
                             join ims_user peu on tpp.rn=1 and peu.user_code=tpp.user_code
                             join pm_region pr on pr.pm_region_code=tpp.pm_region_code
+                            join ims_dept dp on dp.dept_code=peu.dept_code
+                            left join ims_dept pdp on pdp.dept_code=dp.parent_dept_code
                         ),
                         res as (
                             select uph.user_code, uph.user_name, uph.pm_region_name as dev_region, uph.pm_project_code,
+                                uph.dept_code, uph.dept_name, uph.parent_dept_code, uph.parent_dept_name,
                                 CASE\s
                                     WHEN uph.pm_project_name ~ '^[a-zA-Z]+$' THEN
                                         -- 全是英文
@@ -449,14 +452,19 @@ public class ExcelDiffDbController {
                                 ld.user_name as lead_user_name,
                                 ld.pm_region_name as lead_dev_region,
                                 uph.pm_dev_hours,
-                                uph.pm_prj_hours
+                                uph.pm_prj_hours,
+                                ld.dept_code  as lead_dept_code, ld.dept_name as lead_dept_name
+                                , ld.parent_dept_code as lead_parent_dept_code, ld.parent_dept_name as lead_parent_dept_name
                             from uph
                             left join ld on ld.pm_project_code=uph.pm_project_code
                         )
-                        select res.user_code, res.user_name, res.dev_region, res.pm_project_code,
-                            res.project_name, res.pm_region, res.lead_user_code, res.lead_user_name,
+                        select res.user_code, res.user_name, res.dev_region,
+                            res.dept_code, res.dept_name, res.parent_dept_code, res.parent_dept_name,
+                            res.pm_project_code, res.project_name,
+                            res.pm_region, res.lead_user_code, res.lead_user_name,
                             case when res.lead_dev_region is null then res.pm_region else res.lead_dev_region end lead_dev_region,
-                            res.pm_dev_hours, res.pm_prj_hours
+                            res.pm_dev_hours, res.pm_prj_hours,
+                            res.lead_dept_code, res.lead_dept_name, res.lead_parent_dept_code, res.lead_parent_dept_name
                         from res
                         """;
 
@@ -481,6 +489,10 @@ public class ExcelDiffDbController {
                     String userCode = entity.getStr("user_code");
                     String userName = entity.getStr("user_name");
                     String devRegion = entity.getStr("dev_region");
+                    String deptCode = entity.getStr("dept_code");
+                    String deptName = entity.getStr("dept_name");
+                    String parentDeptCode = entity.getStr("parent_dept_code");
+                    String parentDeptName = entity.getStr("parent_dept_name");
                     String pmProjectCode = entity.getStr("pm_project_code");
                     String projectName = entity.getStr("project_name");
                     String pmRegion = entity.getStr("pm_region");
@@ -489,6 +501,10 @@ public class ExcelDiffDbController {
                     String leadDevRegion = entity.getStr("lead_dev_region");
                     String pmDevHours = entity.getStr("pm_dev_hours");
                     String pmPrjHours = entity.getStr("pm_prj_hours");
+                    String leadDeptCode = entity.getStr("lead_dept_code");
+                    String leadDeptName = entity.getStr("lead_dept_name");
+                    String leadParentDeptCode = entity.getStr("lead_parent_dept_code");
+                    String leadParentDeptName = entity.getStr("lead_parent_dept_name");
 
                     String prjAmount = paMap.get(pmProjectCode);
                     String ujAmount = "";
@@ -499,7 +515,29 @@ public class ExcelDiffDbController {
                         // 个人金额 = 该项目总金额 × 工时占比
                         ujAmount = new BigDecimal(prjAmount).multiply(whp).setScale(2, RoundingMode.HALF_UP).toPlainString();
                     }
-                    resultList.add(new MainData(userCode, userName, devRegion, pmProjectCode, projectName, pmRegion, leadUserCode, leadUserName, leadDevRegion, pmDevHours, pmPrjHours, prjAmount, ujAmount));
+                    MainData mainData = new MainData();
+                    mainData.userCodeProperty().set(userCode);
+                    mainData.userNameProperty().set(userName);
+                    mainData.devRegionProperty().set(devRegion);
+                    mainData.deptCodeProperty().set(deptCode);
+                    mainData.deptNameProperty().set(deptName);
+                    mainData.parentDeptCodeProperty().set(parentDeptCode);
+                    mainData.parentDeptNameProperty().set(parentDeptName);
+                    mainData.pmProjectCodeProperty().set(pmProjectCode);
+                    mainData.projectNameProperty().set(projectName);
+                    mainData.pmRegionProperty().set(pmRegion);
+                    mainData.leadUserCodeProperty().set(leadUserCode);
+                    mainData.leadUserNameProperty().set(leadUserName);
+                    mainData.leadDevRegionProperty().set(leadDevRegion);
+                    mainData.pmDevHoursProperty().set(pmDevHours);
+                    mainData.pmPrjHoursProperty().set(pmPrjHours);
+                    mainData.leadDeptCodeProperty().set(leadDeptCode);
+                    mainData.leadDeptNameProperty().set(leadDeptName);
+                    mainData.leadParentDeptCodeProperty().set(leadParentDeptCode);
+                    mainData.leadParentDeptNameProperty().set(leadParentDeptName);
+                    mainData.prjAmountProperty().set(prjAmount);
+                    mainData.ujAmountProperty().set(ujAmount);
+                    resultList.add(mainData);
 
                     // Platform.runLater(() -> raw.setCompareResult(statusStr));
                 }
@@ -568,51 +606,50 @@ public class ExcelDiffDbController {
         }
 
         // 根据用户分组统计值
-        Map<String, MutableSextuple<String, String, Integer, Integer, Integer, BigDecimal>> sumOnlyMap = new HashMap<>();
-        HashSet<String> leadPrjQtySet = new HashSet<>();
-        HashSet<String> asstPrjQtySet = new HashSet<>();
+        Map<String, UserAmountData> sumOnlyMap = new HashMap<>();
+        HashSet<String> prjQtySet = new HashSet<>();
         for (MainData mainData : mainTableList) {
             String userCode = mainData.getUserCode();
 
             if (StrUtil.isBlank(mainData.getPrjAmount())) {
                 continue;
             }
-            MutableSextuple<String, String, Integer, Integer, Integer, BigDecimal> sumOnly = sumOnlyMap.computeIfAbsent(userCode, _ -> MutableTuple.of(mainData.getUserName(), mainData.getDevRegion(), 0, 0, 0, BigDecimal.ZERO));
+            UserAmountData sumOnly = sumOnlyMap.get(userCode);
+            if (sumOnly == null) {
+                sumOnly = new UserAmountData();
+                sumOnly.userCodeProperty().set(userCode);
+                sumOnly.userNameProperty().set(mainData.getUserName());
+                sumOnly.devRegionProperty().set(mainData.getDevRegion());
+                sumOnly.deptCodeProperty().set(mainData.getDeptCode());
+                sumOnly.deptNameProperty().set(mainData.getDeptName());
+                sumOnly.parentDeptCodeProperty().set(mainData.getParentDeptCode());
+                sumOnly.parentDeptNameProperty().set(mainData.getParentDeptName());
+
+                sumOnlyMap.put(userCode, sumOnly);
+            }
 
             String key = userCode + mainData.getPmProjectCode();
-            if (userCode.equals(mainData.getLeadUserCode())) {
-                // 主担项目
-                if (!leadPrjQtySet.contains(key)) {
-                    sumOnly.setFourth(sumOnly.getFourth() + 1);
-                    leadPrjQtySet.add(key);
+            if (!prjQtySet.contains(key)) {
+                if (userCode.equals(mainData.getLeadUserCode())) {
+                    // 主担项目
+                    sumOnly.leadPrjQtyProperty().set(sumOnly.getLeadPrjQty() + 1);
+                } else {
+                    // 协从项目
+                    sumOnly.asstPrjQtyProperty().set(sumOnly.getAsstPrjQty() + 1);
                 }
-            } else if (!asstPrjQtySet.contains(key)) {
-                // 协从项目
-                sumOnly.setFifth(sumOnly.getFifth() + 1);
-                asstPrjQtySet.add(key);
+                prjQtySet.add(key);
+
+                sumOnly.totalPrjQtyProperty().set(sumOnly.getLeadPrjQty() + sumOnly.getAsstPrjQty());
+                BigDecimal ujAmount = new BigDecimal(mainData.getUjAmount());
+                sumOnly.amountProperty().set(new BigDecimal(sumOnly.getAmount()).add(ujAmount).toPlainString());
             }
-            sumOnly.setThird(sumOnly.getFourth() + sumOnly.getFifth());
-            BigDecimal ujAmount = new BigDecimal(mainData.getUjAmount());
-            sumOnly.setSixth(sumOnly.getSixth().add(ujAmount));
         }
         if (sumOnlyMap.isEmpty()) {
             ToastUtils.alertInfo("没有找到符合条件的数据");
             return;
         }
         // 对过滤的数据进行包装排序
-        ObservableList<UserAmountData> finishedData = FXCollections.observableArrayList();
-        for (Map.Entry<String, MutableSextuple<String, String, Integer, Integer, Integer, BigDecimal>> entry : sumOnlyMap.entrySet()) {
-            String userCode = entry.getKey();
-
-            MutableSextuple<String, String, Integer, Integer, Integer, BigDecimal> value = entry.getValue();
-            String userName = value.getFirst();
-            String devRegion = value.getSecond();
-            String totalPrjQty = Integer.toString(value.getThird());
-            String leadPrjQty = Integer.toString(value.getFourth());
-            String asstPrjQty = Integer.toString(value.getFifth());
-            String amount = value.getSixth().toPlainString();
-            finishedData.add(new UserAmountData(userCode, userName, devRegion, totalPrjQty, leadPrjQty, asstPrjQty, amount));
-        }
+        ObservableList<UserAmountData> finishedData = FXCollections.observableArrayList(sumOnlyMap.values());
         // 降序排序（从大到小）
         finishedData.sort((o1, o2) -> {
             String v1 = o1.getAmount();

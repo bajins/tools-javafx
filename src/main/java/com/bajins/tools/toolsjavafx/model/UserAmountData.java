@@ -37,6 +37,38 @@ public class UserAmountData {
     private final StringProperty devRegion;
 
     @TableCol(
+            value = "部门编码",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty deptCode;
+
+    @TableCol(
+            value = "部门名称",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty deptName;
+
+    @TableCol(
+            value = "上级部门编码",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty parentDeptCode;
+
+    @TableCol(
+            value = "上级部门名称",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty parentDeptName;
+
+    @TableCol(
             value = "总项目数",
             width = 50,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
@@ -73,14 +105,18 @@ public class UserAmountData {
     )
     private final StringProperty amount;
 
-    public UserAmountData(String userCode, String userName, String devRegion, String totalPrjQty, String leadPrjQty, String asstPrjQty, String amount) {
-        this.userCode = new SimpleStringProperty(userCode);
-        this.userName = new SimpleStringProperty(userName);
-        this.devRegion = new SimpleStringProperty(devRegion);
-        this.totalPrjQty = new SimpleStringProperty(totalPrjQty);
-        this.leadPrjQty = new SimpleStringProperty(leadPrjQty);
-        this.asstPrjQty = new SimpleStringProperty(asstPrjQty);
-        this.amount = new SimpleStringProperty(amount);
+    public UserAmountData() {
+        this.userCode = new SimpleStringProperty();
+        this.userName = new SimpleStringProperty();
+        this.devRegion = new SimpleStringProperty();
+        this.deptCode = new SimpleStringProperty();
+        this.deptName = new SimpleStringProperty();
+        this.parentDeptCode = new SimpleStringProperty();
+        this.parentDeptName = new SimpleStringProperty();
+        this.totalPrjQty = new SimpleStringProperty();
+        this.leadPrjQty = new SimpleStringProperty();
+        this.asstPrjQty = new SimpleStringProperty();
+        this.amount = new SimpleStringProperty();
     }
 
     public String getUserCode() {
@@ -105,6 +141,38 @@ public class UserAmountData {
 
     public StringProperty devRegionProperty() {
         return devRegion;
+    }
+
+    public String getDeptCode() {
+        return deptCode.get();
+    }
+
+    public StringProperty deptCodeProperty() {
+        return deptCode;
+    }
+
+    public String getDeptName() {
+        return deptName.get();
+    }
+
+    public StringProperty deptNameProperty() {
+        return deptName;
+    }
+
+    public String getParentDeptCode() {
+        return parentDeptCode.get();
+    }
+
+    public StringProperty parentDeptCodeProperty() {
+        return parentDeptCode;
+    }
+
+    public String getParentDeptName() {
+        return parentDeptName.get();
+    }
+
+    public StringProperty parentDeptNameProperty() {
+        return parentDeptName;
     }
 
     public String getTotalPrjQty() {

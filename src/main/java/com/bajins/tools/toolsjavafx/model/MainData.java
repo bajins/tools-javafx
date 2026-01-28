@@ -6,6 +6,7 @@ import javafx.beans.property.StringProperty;
 
 
 /**
+ *
  * @author bajin
  */
 public class MainData {
@@ -38,6 +39,38 @@ public class MainData {
     private final StringProperty devRegion;
 
     @TableCol(
+            value = "部门编码",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty deptCode;
+
+    @TableCol(
+            value = "部门名称",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty deptName;
+
+    @TableCol(
+            value = "上级部门编码",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty parentDeptCode;
+
+    @TableCol(
+            value = "上级部门名称",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty parentDeptName;
+
+    @TableCol(
             value = "项目编码",
             width = 100,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
@@ -51,7 +84,7 @@ public class MainData {
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
             alignment = "CENTER"
     )
-    private final StringProperty pmProjectName;
+    private final StringProperty projectName;
 
     @TableCol(
             value = "项目区域",
@@ -104,7 +137,6 @@ public class MainData {
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
             alignment = "CENTER",
             numeric = true
-
     )
     private final StringProperty pmPrjHours;
 
@@ -126,36 +158,60 @@ public class MainData {
     )
     private final StringProperty ujAmount;
 
-    public MainData(StringProperty userCode, StringProperty userName, StringProperty devRegion, StringProperty pmProjectCode, StringProperty pmProjectName, StringProperty pmRegion, StringProperty leadUserCode, StringProperty leadUserName, StringProperty leadDevRegion, StringProperty pmDevHours, StringProperty pmPrjHours, StringProperty prjAmount, StringProperty ujAmount) {
-        this.userCode = userCode;
-        this.userName = userName;
-        this.devRegion = devRegion;
-        this.pmProjectCode = pmProjectCode;
-        this.pmProjectName = pmProjectName;
-        this.pmRegion = pmRegion;
-        this.leadUserCode = leadUserCode;
-        this.leadUserName = leadUserName;
-        this.leadDevRegion = leadDevRegion;
-        this.pmDevHours = pmDevHours;
-        this.pmPrjHours = pmPrjHours;
-        this.prjAmount = prjAmount;
-        this.ujAmount = ujAmount;
-    }
+    @TableCol(
+            value = "主担部门编码",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty leadDeptCode;
 
-    public MainData(String userCode, String userName, String devRegion, String pmProjectCode, String pmProjectName, String pmRegion, String leadUserCode, String leadUserName, String leadDevRegion, String pmDevHours, String pmPrjHours, String prjAmount, String ujAmount) {
-        this.userCode = new SimpleStringProperty(userCode);
-        this.userName = new SimpleStringProperty(userName);
-        this.devRegion = new SimpleStringProperty(devRegion);
-        this.pmProjectCode = new SimpleStringProperty(pmProjectCode);
-        this.pmProjectName = new SimpleStringProperty(pmProjectName);
-        this.pmRegion = new SimpleStringProperty(pmRegion);
-        this.leadUserCode = new SimpleStringProperty(leadUserCode);
-        this.leadUserName = new SimpleStringProperty(leadUserName);
-        this.leadDevRegion = new SimpleStringProperty(leadDevRegion);
-        this.pmDevHours = new SimpleStringProperty(pmDevHours);
-        this.pmPrjHours = new SimpleStringProperty(pmPrjHours);
-        this.prjAmount = new SimpleStringProperty(prjAmount);
-        this.ujAmount = new SimpleStringProperty(ujAmount);
+    @TableCol(
+            value = "主担部门名称",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty leadDeptName;
+
+    @TableCol(
+            value = "主担上级部门编码",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty leadParentDeptCode;
+
+    @TableCol(
+            value = "主担上级部门名称",
+            width = 100,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER"
+    )
+    private final StringProperty leadParentDeptName;
+
+    public MainData() {
+        this.userCode = new SimpleStringProperty();
+        this.userName = new SimpleStringProperty();
+        this.devRegion = new SimpleStringProperty();
+        this.deptCode = new SimpleStringProperty();
+        this.deptName = new SimpleStringProperty();
+        this.parentDeptCode = new SimpleStringProperty();
+        this.parentDeptName = new SimpleStringProperty();
+        this.pmProjectCode = new SimpleStringProperty();
+        this.projectName = new SimpleStringProperty();
+        this.pmRegion = new SimpleStringProperty();
+        this.leadUserCode = new SimpleStringProperty();
+        this.leadUserName = new SimpleStringProperty();
+        this.leadDevRegion = new SimpleStringProperty();
+        this.pmDevHours = new SimpleStringProperty();
+        this.pmPrjHours = new SimpleStringProperty();
+        this.prjAmount = new SimpleStringProperty();
+        this.ujAmount = new SimpleStringProperty();
+        this.leadDeptCode = new SimpleStringProperty();
+        this.leadDeptName = new SimpleStringProperty();
+        this.leadParentDeptCode = new SimpleStringProperty();
+        this.leadParentDeptName = new SimpleStringProperty();
     }
 
     public String getUserCode() {
@@ -182,6 +238,38 @@ public class MainData {
         return devRegion;
     }
 
+    public String getDeptCode() {
+        return deptCode.get();
+    }
+
+    public StringProperty deptCodeProperty() {
+        return deptCode;
+    }
+
+    public String getDeptName() {
+        return deptName.get();
+    }
+
+    public StringProperty deptNameProperty() {
+        return deptName;
+    }
+
+    public String getParentDeptCode() {
+        return parentDeptCode.get();
+    }
+
+    public StringProperty parentDeptCodeProperty() {
+        return parentDeptCode;
+    }
+
+    public String getParentDeptName() {
+        return parentDeptName.get();
+    }
+
+    public StringProperty parentDeptNameProperty() {
+        return parentDeptName;
+    }
+
     public String getPmProjectCode() {
         return pmProjectCode.get();
     }
@@ -190,12 +278,12 @@ public class MainData {
         return pmProjectCode;
     }
 
-    public String getPmProjectName() {
-        return pmProjectName.get();
+    public String getProjectName() {
+        return projectName.get();
     }
 
-    public StringProperty pmProjectNameProperty() {
-        return pmProjectName;
+    public StringProperty projectNameProperty() {
+        return projectName;
     }
 
     public String getPmRegion() {
@@ -260,5 +348,37 @@ public class MainData {
 
     public StringProperty ujAmountProperty() {
         return ujAmount;
+    }
+
+    public String getLeadDeptCode() {
+        return leadDeptCode.get();
+    }
+
+    public StringProperty leadDeptCodeProperty() {
+        return leadDeptCode;
+    }
+
+    public String getLeadDeptName() {
+        return leadDeptName.get();
+    }
+
+    public StringProperty leadDeptNameProperty() {
+        return leadDeptName;
+    }
+
+    public String getLeadParentDeptCode() {
+        return leadParentDeptCode.get();
+    }
+
+    public StringProperty leadParentDeptCodeProperty() {
+        return leadParentDeptCode;
+    }
+
+    public String getLeadParentDeptName() {
+        return leadParentDeptName.get();
+    }
+
+    public StringProperty leadParentDeptNameProperty() {
+        return leadParentDeptName;
     }
 }
