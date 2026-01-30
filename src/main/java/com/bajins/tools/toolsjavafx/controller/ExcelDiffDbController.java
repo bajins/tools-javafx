@@ -2,82 +2,108 @@ package com.bajins.tools.toolsjavafx.controller;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.db.Db;
 import cn.hutool.db.Entity;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import com.bajins.tools.toolsjavafx.model.MainData;
+import com.bajins.tools.toolsjavafx.ToolsjavafxApplication;
+import com.bajins.tools.toolsjavafx.model.ProjectDevAmountData;
 import com.bajins.tools.toolsjavafx.model.RawData;
 import com.bajins.tools.toolsjavafx.model.UserAmountData;
-import com.bajins.tools.toolsjavafx.utils.JfxTableFilterUtils;
-import com.bajins.tools.toolsjavafx.utils.JfxUtils;
-import com.bajins.tools.toolsjavafx.utils.ToastUtils;
+import com.bajins.tools.toolsjavafx.service.MainService;
+import com.bajins.tools.toolsjavafx.utils.*;
+import com.bajins.tools.toolsjavafx.view.ViewNavigator;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Triple;
+import javafx.stage.Window;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Cell;
 
-import javax.sql.DataSource;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URL;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
  * @author bajin
  */
-public class ExcelDiffDbController {
-
+@Singleton
+public class ExcelDiffDbController implements Initializable {
     // UI 组件
     @FXML
     private TextField filePathField;
+    // 按钮
+    @FXML
+    private Button btnPreview;
     @FXML
     private Label lblSourceStatus;
+
     @FXML
     private ComboBox<String> dbTypeCombo;
     @FXML
     private TextField dbIpField, dbPortField, dbNameField, dbUserField;
     @FXML
     private PasswordField dbPasswordField;
+
     @FXML
     private TextField txtMainSearch;
-
-    // 按钮
     @FXML
-    private Button btnPreview;
-    @FXML
-    private Button btnRun, btnCopy, btnExport, btnUtAmount;
+    private Button btnTestConn, btnRun, btnCopy, btnExport, btnUtAmount, btnFullscreen, btnWorkHourCount;
     @FXML
     private Label statusLabel;
-
     // 主界面表格
     @FXML
-    private TableView<MainData> tableView;
+    private TableView<ProjectDevAmountData> mainTableView;
 
     // 数据源
     // 1. 用于暂存导入的原始数据，不直接显示在主界面
     private List<RawData> cachedData = new ArrayList<>();
 
     // 2. 主界面表格绑定的数据列表 (仅在运行时填充)
-    private final ObservableList<MainData> mainTableList = FXCollections.observableArrayList();
+    private final ObservableList<ProjectDevAmountData> mainTableList = FXCollections.observableArrayList();
+
+    private final MainService mainService;
+
+    private final FullscreenViewController fullscreenViewController;
+
+    @Inject
+    public ExcelDiffDbController(MainService mainService, FullscreenViewController fullscreenViewController) {
+        this.mainService = mainService;
+        this.fullscreenViewController = fullscreenViewController;
+    }
+
+    /**
+     * 初始化控制器，实现Initializable接口后，initialize()则不再自动调用
+     *
+     * @param url
+     * @param resourceBundle
+     */
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        // 此时@FXML字段已注入，可安全使用
+        initialize();
+    }
 
     @FXML
     public void initialize() {
@@ -97,10 +123,14 @@ public class ExcelDiffDbController {
         );
 
         // 绑定搜索逻辑
-        FilteredList<MainData> filteredData = JfxTableFilterUtils.setupSearch(txtMainSearch, mainTableList, tableView);
+        FilteredList<ProjectDevAmountData> filteredData = JfxTableFilterUtils.setupSearch(txtMainSearch, mainTableList, mainTableView);
+        filteredData.addListener((ListChangeListener<ProjectDevAmountData>) c -> {
+            while (c.next()) { // Handle adds/removes
+                statusLabel.setText("过滤后 " + filteredData.size() + " 条");
+            }
+        });
         // 1. 配置列属性 (表头、宽度、样式 全部由实体类注解决定)
-        JfxUtils.createColumnsFromAnnotations(tableView, MainData.class, filteredData);
-
+        JfxUtils.createColumnsFromAnnotations(mainTableView, ProjectDevAmountData.class, filteredData);
     }
 
     /**
@@ -194,6 +224,8 @@ public class ExcelDiffDbController {
         btnCopy.setDisable(true);
         btnExport.setDisable(true);
         btnUtAmount.setDisable(true);
+        btnFullscreen.setDisable(true);
+        btnWorkHourCount.setDisable(true);
         lblSourceStatus.setText("正在解析...");
         lblSourceStatus.setTextFill(Color.ORANGE);
         try {
@@ -289,6 +321,8 @@ public class ExcelDiffDbController {
         FilteredList<RawData> filteredData = JfxTableFilterUtils.setupSearch(txtPreviewSearch, previewList, previewTable);
 
         JfxUtils.createColumnsFromAnnotations(previewTable, RawData.class, filteredData);
+        // 列宽自适应
+        previewTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
 
         // 2.4 布局
         VBox root = new VBox(5, searchBox, previewTable);
@@ -316,14 +350,10 @@ public class ExcelDiffDbController {
     }
 
     /**
-     * 运行
+     * 测试数据库连接
      */
     @FXML
-    public void handleRun() {
-        if (cachedData.isEmpty()) {
-            ToastUtils.alertError("提示", "无数据，请先导入/粘贴");
-            return;
-        }
+    public void handleTestConn(ActionEvent actionEvent) {
 
         // 获取 DB 配置
         String dbType = dbTypeCombo.getValue();
@@ -338,6 +368,28 @@ public class ExcelDiffDbController {
             ToastUtils.alertError("配置错误", "请完善数据库连接信息");
             return;
         }
+        try {
+            JdbcUtil.createDataSource(dbType, ip, port, dbName, user, pass);
+            JdbcUtil.testConn();
+
+            btnRun.setDisable(false);
+            btnWorkHourCount.setDisable(false);
+
+            ToastUtils.alertInfo("数据库连接测试成功");
+        } catch (SQLException e) {
+            ToastUtils.alertError("数据库连接测试失败", e.getMessage());
+        }
+    }
+
+    /**
+     * 运行
+     */
+    @FXML
+    public void handleRun() {
+        if (cachedData.isEmpty()) {
+            ToastUtils.alertError("提示", "无数据，请先导入/粘贴");
+            return;
+        }
 
         btnRun.setDisable(true);
         statusLabel.setText("正在连接数据库查询...");
@@ -345,144 +397,24 @@ public class ExcelDiffDbController {
         // 后台任务
         Task<Void> task = new Task<>() {
             // 用于收集结果的临时列表 (MainData)
-            List<MainData> resultList = new ArrayList<>();
+            final List<ProjectDevAmountData> resultList = new ArrayList<>();
 
             @Override
             protected Void call() throws Exception {
-                // 3.1 动态构建 URL
-                String url = buildUrl(dbType, ip, port, dbName);
-
-                /*// 自定义数据库Setting，更多实用请参阅Hutool-Setting章节
-                Setting setting = new Setting();
-                // 获取指定配置，第二个参数为分组，用于多数据源，无分组情况下传null
-                // 注意此处DSFactory需要复用或者关闭
-                DSFactory dsFactory = DSFactory.create(setting);
-                DataSource ds = dsFactory.getDataSource();*/
-
-                // SimpleDataSource只是DriverManager.getConnection的简单包装，本身并不支持池化功能，此类特别适合少量数据库连接的操作。
-                DataSource ds = new SimpleDataSource(url, user, pass);
-                Db db = Db.use(ds);
-
-                String sql = """
-                        -- 查询所有人员的投入项目工时，考虑实际情况，可能开发一部分然后会把需求转给其他人，使用pm_hours_log查实际投入
-                        with top as (
-                            select phl.pm_task_code, phl.user_code, pnp.pm_project_code, phl.pm_calculate_hours
-                            from pm_hours_log phl
-                            join pm_emp emp on phl.user_code=emp.user_code and emp.pm_ps_type=1 --and emp.pm_arrange_user='PG2006471'
-                            --		and phl.created_date >= DATE_TRUNC('year', CURRENT_DATE) AND phl.created_date < DATE_TRUNC('year', CURRENT_DATE) + INTERVAL '1 year'
-                            --	and phl.created_date >= '2025-01-01 00:00:00' AND phl.created_date <= '2025-12-31 23:59:59'
-                                and emp.pm_arrange_user in ('PG1605125','PG1508090','PG1706192','PG1505071','PG2006471')
-                            join pm_dev pd on pd.pm_develop_code=phl.pm_task_code
-                            join pm_needs_propose pnp on pnp.pm_needs_code=pd.pm_needs_code and pnp.pm_project_code not in ('PGKF2017','D00902')
-                            where 1=1
-                        --	and pnp.pm_project_code in ('')
-                        ),
-                        ph as (
-                            select top.pm_project_code, sum(top.pm_calculate_hours) pm_prj_hours
-                            from top
-                            group by top.pm_project_code
-                        ),
-                        uh as (
-                            select top.user_code, top.pm_project_code, sum(top.pm_calculate_hours) pm_dev_hours
-                            from top
-                            group by top.user_code, top.pm_project_code
-                        ),
-                        uph as (
-                            select uh.user_code, iu.user_name, uh.pm_project_code, uh.pm_dev_hours, ph.pm_prj_hours, pp.pm_region, pr.pm_region_name, pp.pm_project_name
-                            , iu.dept_code, dp.dept_name, dp.parent_dept_code, pdp.dept_name parent_dept_name
-                            from uh
-                            join ims_user iu on iu.user_code=uh.user_code
-                            join ph on ph.pm_project_code=uh.pm_project_code
-                            join pm_project pp on pp.pm_project_code=uh.pm_project_code
-                            left join pm_emp pe on pe.user_code=uh.user_code
-                            left join pm_region pr on pr.pm_region_code=pe.pm_region_code
-                            join ims_dept dp on dp.dept_code=iu.dept_code
-                            left join ims_dept pdp on pdp.dept_code=dp.parent_dept_code
-                        ),
-                        ld as (
-                            select
-                                tpp.pm_project_code,
-                                tpp.user_code,
-                                tpp.pm_region_code,
-                                peu.user_name,
-                                pr.pm_region_name
-                                , peu.dept_code, dp.dept_name, dp.parent_dept_code, pdp.dept_name parent_dept_name
-                            from (
-                                select
-                                    ppe.pm_project_code,
-                                    ppe.pm_transfer_in_date,
-                                    ppe.created_date,
-                                    pe.user_code,
-                                    pe.pm_region_code,
-                                    ROW_NUMBER() OVER (PARTITION BY ppe.pm_project_code ORDER BY ppe.pm_transfer_in_date DESC, ppe.created_date DESC) as rn
-                                from pm_prj_emp ppe
-                                join top on ppe.pm_project_code=top.pm_project_code and ppe.pm_is_lead_developer='y'
-                                -- 考虑不同的部门
-                                join pm_emp pe on pe.user_code=ppe.user_code --and pe.pm_region_code<>'05'
-                                    and pe.pm_arrange_user in ('PG1605125','PG1508090','PG1706192','PG1505071','PG2006471')
-                            ) tpp
-                            join ims_user peu on tpp.rn=1 and peu.user_code=tpp.user_code
-                            join pm_region pr on pr.pm_region_code=tpp.pm_region_code
-                            join ims_dept dp on dp.dept_code=peu.dept_code
-                            left join ims_dept pdp on pdp.dept_code=dp.parent_dept_code
-                        ),
-                        res as (
-                            select uph.user_code, uph.user_name, uph.pm_region_name as dev_region, uph.pm_project_code,
-                                uph.dept_code, uph.dept_name, uph.parent_dept_code, uph.parent_dept_name,
-                                CASE\s
-                                    WHEN uph.pm_project_name ~ '^[a-zA-Z]+$' THEN
-                                        -- 全是英文
-                                        uph.pm_project_name
-                                    WHEN uph.pm_project_name ~ '^[a-zA-Z]' THEN
-                                        -- 以英文开头
-                                        LEFT(uph.pm_project_name, 8)
-                                    ELSE
-                                        -- 包含中文或其他字符
-                                        LEFT(NULLIF(TRIM(uph.pm_project_name),''), 6)
-                                END project_name,
-                                case uph.pm_region
-                                    when 1 then '华南'
-                                    when 2 then '华东'
-                                    when 3 then '西南'
-                                    when 4 then '华北'
-                                    when 5 then '华中'
-                                    else uph.pm_region::numeric::TEXT
-                                end pm_region,
-                                ld.user_code as lead_user_code,
-                                ld.user_name as lead_user_name,
-                                ld.pm_region_name as lead_dev_region,
-                                uph.pm_dev_hours,
-                                uph.pm_prj_hours,
-                                ld.dept_code  as lead_dept_code, ld.dept_name as lead_dept_name
-                                , ld.parent_dept_code as lead_parent_dept_code, ld.parent_dept_name as lead_parent_dept_name
-                            from uph
-                            left join ld on ld.pm_project_code=uph.pm_project_code
-                        )
-                        select res.user_code, res.user_name, res.dev_region,
-                            res.dept_code, res.dept_name, res.parent_dept_code, res.parent_dept_name,
-                            res.pm_project_code, res.project_name,
-                            res.pm_region, res.lead_user_code, res.lead_user_name,
-                            case when res.lead_dev_region is null then res.pm_region else res.lead_dev_region end lead_dev_region,
-                            res.pm_dev_hours, res.pm_prj_hours,
-                            res.lead_dept_code, res.lead_dept_name, res.lead_parent_dept_code, res.lead_parent_dept_name
-                        from res
-                        """;
-
                 // 数据转换方便后续快速获取
                 Map<String, String> paMap = new HashMap<>();
-                StringJoiner stringJoiner = new StringJoiner("','", " and pnp.pm_project_code in ('", "')");
+                StringJoiner stringJoiner = new StringJoiner("','", "('", "')");
+                stringJoiner.setEmptyValue("");
                 for (RawData rawData : cachedData) {
                     paMap.put(rawData.getPmProjectCode(), rawData.getPrjAmount());
                     stringJoiner.add(rawData.getPmProjectCode());
                 }
-                List<Entity> entities = db.query(sql.replace("--\tand pnp.pm_project_code in ('')", stringJoiner.toString()));
+                List<Entity> entities = mainService.queryProjectDetail("", null, stringJoiner.toString(), null);
                 if (entities.isEmpty()) {
                     updateMessage("查询到 0 条数据");
                     return null;
                 }
-
-                // 3.3 比对逻辑
-                updateMessage("正在比对 " + entities.size() + " 条数据...");
+                updateMessage("正在处理 " + entities.size() + " 条数据...");
 
                 for (Entity entity : entities) {
 
@@ -499,45 +431,45 @@ public class ExcelDiffDbController {
                     String leadUserCode = entity.getStr("lead_user_code");
                     String leadUserName = entity.getStr("lead_user_name");
                     String leadDevRegion = entity.getStr("lead_dev_region");
-                    String pmDevHours = entity.getStr("pm_dev_hours");
-                    String pmPrjHours = entity.getStr("pm_prj_hours");
                     String leadDeptCode = entity.getStr("lead_dept_code");
                     String leadDeptName = entity.getStr("lead_dept_name");
                     String leadParentDeptCode = entity.getStr("lead_parent_dept_code");
                     String leadParentDeptName = entity.getStr("lead_parent_dept_name");
+                    BigDecimal pmDevHours = entity.getBigDecimal("pm_dev_hours");
+                    BigDecimal pmPrjHours = entity.getBigDecimal("pm_prj_hours");
 
                     String prjAmount = paMap.get(pmProjectCode);
                     String ujAmount = "";
 
                     if (prjAmount != null) {
                         // 工时占比 = 该人在该项目的工时 / 该项目的总工时
-                        BigDecimal whp = new BigDecimal(pmDevHours).divide(new BigDecimal(pmPrjHours), 6, RoundingMode.HALF_UP);
+                        BigDecimal whp = pmDevHours.divide(pmPrjHours, 6, RoundingMode.HALF_UP);
                         // 个人金额 = 该项目总金额 × 工时占比
                         ujAmount = new BigDecimal(prjAmount).multiply(whp).setScale(2, RoundingMode.HALF_UP).toPlainString();
                     }
-                    MainData mainData = new MainData();
-                    mainData.userCodeProperty().set(userCode);
-                    mainData.userNameProperty().set(userName);
-                    mainData.devRegionProperty().set(devRegion);
-                    mainData.deptCodeProperty().set(deptCode);
-                    mainData.deptNameProperty().set(deptName);
-                    mainData.parentDeptCodeProperty().set(parentDeptCode);
-                    mainData.parentDeptNameProperty().set(parentDeptName);
-                    mainData.pmProjectCodeProperty().set(pmProjectCode);
-                    mainData.projectNameProperty().set(projectName);
-                    mainData.pmRegionProperty().set(pmRegion);
-                    mainData.leadUserCodeProperty().set(leadUserCode);
-                    mainData.leadUserNameProperty().set(leadUserName);
-                    mainData.leadDevRegionProperty().set(leadDevRegion);
-                    mainData.pmDevHoursProperty().set(pmDevHours);
-                    mainData.pmPrjHoursProperty().set(pmPrjHours);
-                    mainData.leadDeptCodeProperty().set(leadDeptCode);
-                    mainData.leadDeptNameProperty().set(leadDeptName);
-                    mainData.leadParentDeptCodeProperty().set(leadParentDeptCode);
-                    mainData.leadParentDeptNameProperty().set(leadParentDeptName);
-                    mainData.prjAmountProperty().set(prjAmount);
-                    mainData.ujAmountProperty().set(ujAmount);
-                    resultList.add(mainData);
+                    ProjectDevAmountData projectDevAmountData = new ProjectDevAmountData();
+                    projectDevAmountData.userCodeProperty().set(userCode);
+                    projectDevAmountData.userNameProperty().set(userName);
+                    projectDevAmountData.devRegionProperty().set(devRegion);
+                    projectDevAmountData.deptCodeProperty().set(deptCode);
+                    projectDevAmountData.deptNameProperty().set(deptName);
+                    projectDevAmountData.parentDeptCodeProperty().set(parentDeptCode);
+                    projectDevAmountData.parentDeptNameProperty().set(parentDeptName);
+                    projectDevAmountData.pmProjectCodeProperty().set(pmProjectCode);
+                    projectDevAmountData.projectNameProperty().set(projectName);
+                    projectDevAmountData.pmRegionProperty().set(pmRegion);
+                    projectDevAmountData.leadUserCodeProperty().set(leadUserCode);
+                    projectDevAmountData.leadUserNameProperty().set(leadUserName);
+                    projectDevAmountData.leadDevRegionProperty().set(leadDevRegion);
+                    projectDevAmountData.leadDeptCodeProperty().set(leadDeptCode);
+                    projectDevAmountData.leadDeptNameProperty().set(leadDeptName);
+                    projectDevAmountData.leadParentDeptCodeProperty().set(leadParentDeptCode);
+                    projectDevAmountData.leadParentDeptNameProperty().set(leadParentDeptName);
+                    projectDevAmountData.pmDevHoursProperty().set(pmDevHours.stripTrailingZeros().toPlainString());
+                    projectDevAmountData.pmPrjHoursProperty().set(pmPrjHours.stripTrailingZeros().toPlainString());
+                    projectDevAmountData.prjAmountProperty().set(prjAmount);
+                    projectDevAmountData.ujAmountProperty().set(ujAmount);
+                    resultList.add(projectDevAmountData);
 
                     // Platform.runLater(() -> raw.setCompareResult(statusStr));
                 }
@@ -555,6 +487,8 @@ public class ExcelDiffDbController {
                 btnCopy.setDisable(false);
                 btnExport.setDisable(false);
                 btnUtAmount.setDisable(false);
+                btnFullscreen.setDisable(false);
+                btnWorkHourCount.setDisable(false);
                 statusLabel.setText(getMessage());
                 // ToastUtils.alertInfo("运行完成！");
             }
@@ -583,23 +517,26 @@ public class ExcelDiffDbController {
      * 复制结果
      */
     @FXML
-    public void handleCopyResults() {
-        JfxUtils.copyTableContent(tableView);
+    public void handleCopy() {
+        JfxUtils.copyTableContent(mainTableView);
     }
 
     /**
      * 导出结果
      */
     @FXML
-    public void handleExportResults() {
+    public void handleExport() {
         if (mainTableList.isEmpty()) {
             return;
         }
-        JfxUtils.exportTableContent(tableView);
+        JfxUtils.exportTableContent(mainTableView);
     }
 
+    /**
+     * 个人结案金额
+     */
     @FXML
-    public void handleShowFinished() {
+    public void handleUtAmount() {
         if (mainTableList.isEmpty()) {
             ToastUtils.alertWarning("当前没有数据，请先运行比对");
             return;
@@ -608,39 +545,43 @@ public class ExcelDiffDbController {
         // 根据用户分组统计值
         Map<String, UserAmountData> sumOnlyMap = new HashMap<>();
         HashSet<String> prjQtySet = new HashSet<>();
-        for (MainData mainData : mainTableList) {
-            String userCode = mainData.getUserCode();
+        for (ProjectDevAmountData projectDevAmountData : mainTableList) {
+            String userCode = projectDevAmountData.getUserCode();
 
-            if (StrUtil.isBlank(mainData.getPrjAmount())) {
+            if (StrUtil.isBlank(projectDevAmountData.getPrjAmount())) {
                 continue;
             }
             UserAmountData sumOnly = sumOnlyMap.get(userCode);
             if (sumOnly == null) {
                 sumOnly = new UserAmountData();
                 sumOnly.userCodeProperty().set(userCode);
-                sumOnly.userNameProperty().set(mainData.getUserName());
-                sumOnly.devRegionProperty().set(mainData.getDevRegion());
-                sumOnly.deptCodeProperty().set(mainData.getDeptCode());
-                sumOnly.deptNameProperty().set(mainData.getDeptName());
-                sumOnly.parentDeptCodeProperty().set(mainData.getParentDeptCode());
-                sumOnly.parentDeptNameProperty().set(mainData.getParentDeptName());
+                sumOnly.userNameProperty().set(projectDevAmountData.getUserName());
+                sumOnly.devRegionProperty().set(projectDevAmountData.getDevRegion());
+                sumOnly.deptCodeProperty().set(projectDevAmountData.getDeptCode());
+                sumOnly.deptNameProperty().set(projectDevAmountData.getDeptName());
+                sumOnly.parentDeptCodeProperty().set(projectDevAmountData.getParentDeptCode());
+                sumOnly.parentDeptNameProperty().set(projectDevAmountData.getParentDeptName());
+                sumOnly.leadPrjQtyProperty().set("0");
+                sumOnly.asstPrjQtyProperty().set("0");
+                sumOnly.totalPrjQtyProperty().set("0");
+                sumOnly.amountProperty().set("0");
 
                 sumOnlyMap.put(userCode, sumOnly);
             }
 
-            String key = userCode + mainData.getPmProjectCode();
+            String key = userCode + projectDevAmountData.getPmProjectCode();
             if (!prjQtySet.contains(key)) {
-                if (userCode.equals(mainData.getLeadUserCode())) {
+                if (userCode.equals(projectDevAmountData.getLeadUserCode())) {
                     // 主担项目
-                    sumOnly.leadPrjQtyProperty().set(sumOnly.getLeadPrjQty() + 1);
+                    sumOnly.leadPrjQtyProperty().set(Integer.toString(Integer.parseInt(sumOnly.getLeadPrjQty()) + 1));
                 } else {
                     // 协从项目
-                    sumOnly.asstPrjQtyProperty().set(sumOnly.getAsstPrjQty() + 1);
+                    sumOnly.asstPrjQtyProperty().set(Integer.toString(Integer.parseInt(sumOnly.getAsstPrjQty()) + 1));
                 }
                 prjQtySet.add(key);
 
-                sumOnly.totalPrjQtyProperty().set(sumOnly.getLeadPrjQty() + sumOnly.getAsstPrjQty());
-                BigDecimal ujAmount = new BigDecimal(mainData.getUjAmount());
+                sumOnly.totalPrjQtyProperty().set(Integer.toString(Integer.parseInt(sumOnly.getLeadPrjQty()) + Integer.parseInt(sumOnly.getAsstPrjQty())));
+                BigDecimal ujAmount = new BigDecimal(projectDevAmountData.getUjAmount());
                 sumOnly.amountProperty().set(new BigDecimal(sumOnly.getAmount()).add(ujAmount).toPlainString());
             }
         }
@@ -684,7 +625,7 @@ public class ExcelDiffDbController {
         stage.initModality(Modality.NONE);
 
         // 获取父窗口并设置 Owner
-        javafx.stage.Window parentWindow = txtMainSearch.getScene().getWindow();
+        Window parentWindow = txtMainSearch.getScene().getWindow();
         if (parentWindow != null) {
             stage.initOwner(parentWindow);
         }
@@ -710,6 +651,8 @@ public class ExcelDiffDbController {
         FilteredList<UserAmountData> filteredData = JfxTableFilterUtils.setupSearch(txtSearch, finishedData, table);
 
         JfxUtils.createColumnsFromAnnotations(table, UserAmountData.class, filteredData);
+        // 列宽自适应
+        // table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
 
         // 5. 绑定功能
         // 复制
@@ -742,21 +685,33 @@ public class ExcelDiffDbController {
         stage.show();
     }
 
-    // 辅助方法
-    private String buildUrl(String type, String ip, String port, String db) {
-        if ("MySQL".equals(type)) {
-            return String.format("jdbc:mysql://%s:%s/%s?useSSL=false", ip, port, db);
+    @FXML
+    public void handleFullscreen() {
+        if (mainTableList.isEmpty()) {
+            ToastUtils.alertWarning("当前没有数据，请先点击【个人项目金额】按钮");
+            return;
         }
-        if ("PostgreSQL".equals(type)) {
-            return String.format("jdbc:postgresql://%s:%s/%s", ip, port, db);
+
+        try {
+            Window parentWindow = mainTableView.getScene().getWindow();
+            ViewNavigator.loadSceneMaxWindow("fullscreen-view.fxml", "全屏查看 (共 " + mainTableList.size() + " 条)", parentWindow, _ -> {
+                fullscreenViewController.initData(mainTableList);
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+            ToastUtils.alertError("错误", e.getMessage());
         }
-        if ("Oracle".equals(type)) {
-            return String.format("jdbc:oracle:thin:@%s:%s:%s", ip, port, db);
+    }
+
+    @FXML
+    public void handleWorkHourCount() {
+        try {
+            Window parentWindow = btnWorkHourCount.getScene().getWindow();
+            ViewNavigator.loadSceneMaxWindow("work-hour-count.fxml", btnWorkHourCount.getText(), parentWindow, null);
+        } catch (IOException e) {
+            e.printStackTrace();
+            ToastUtils.alertError("错误", e.getMessage());
         }
-        if ("SQLServer".equals(type)) {
-            return String.format("jdbc:sqlserver://%s:%s;databaseName=%s", ip, port, db);
-        }
-        return "";
     }
 
     private String getCellVal(Cell cell) {
@@ -766,4 +721,5 @@ public class ExcelDiffDbController {
         cell.setCellType(CellType.STRING); // 强转 String 防止数字格式问题
         return cell.getStringCellValue();
     }
+
 }

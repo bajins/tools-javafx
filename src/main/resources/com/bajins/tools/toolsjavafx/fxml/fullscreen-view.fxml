@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.bajins.tools.toolsjavafx.controller.FullscreenViewController"
+      spacing="5" alignment="TOP_CENTER">
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+
+    <HBox spacing="15" alignment="CENTER_LEFT">
+        <padding>
+            <Insets bottom="5"/>
+        </padding>
+        <Label text="🔍 搜索结果:"/>
+        <TextField fx:id="txtSearch" promptText="输入关键词过滤..." prefWidth="200"/>
+        <Separator orientation="VERTICAL"/>
+        <Button fx:id="btnCopy" text="复制结果"/>
+        <Button fx:id="btnExport" text="导出列表"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="statusLabel" text="就绪" textFill="#666666"/>
+    </HBox>
+
+    <TableView fx:id="tableView" VBox.vgrow="ALWAYS">
+        <placeholder>
+            <Label text="没有数据可显示"/>
+        </placeholder>
+    </TableView>
+
+</VBox>

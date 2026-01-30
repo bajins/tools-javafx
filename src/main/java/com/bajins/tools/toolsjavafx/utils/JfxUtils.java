@@ -3,6 +3,7 @@ package com.bajins.tools.toolsjavafx.utils;
 import cn.hutool.core.swing.clipboard.ClipboardUtil;
 import cn.hutool.core.text.csv.CsvUtil;
 import cn.hutool.core.util.StrUtil;
+import com.bajins.tools.toolsjavafx.controller.FullscreenViewController;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
@@ -14,8 +15,11 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.event.Event;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -23,8 +27,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.controlsfx.control.table.TableFilter;
 
+import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -41,6 +49,11 @@ import java.util.stream.Collectors;
  * @author bajin
  */
 public class JfxUtils {
+
+    /**
+     * 缓存已查找的类字段，避免重复反射
+     */
+    private static final Map<Class<?>, List<Field>> FIELD_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 通用的数字字符串比较器
@@ -70,6 +83,66 @@ public class JfxUtils {
     };
 
     /**
+     * 递归查找类及其所有父类中指定名称的字段
+     *
+     * @param clazz     开始查找的类
+     * @param fieldName 要查找的字段名
+     * @return 找到的字段对象，或 null 如果未找到
+     */
+    public static Field getFieldRecursive(Class<?> clazz, String fieldName) {
+        Class<?> currentClass = clazz;
+
+        // 循环向上查找，直到 Object 类
+        while (currentClass != null && currentClass != Object.class) {
+            try {
+                // 尝试在当前类中找
+                return currentClass.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+                // 当前类没找到，继续去父类找
+                currentClass = currentClass.getSuperclass();
+            }
+        }
+        // 所有的类都找遍了也没找到
+        return null;
+    }
+
+    /**
+     * 递归查找类及其所有父类中所有字段
+     *
+     * @param clazz 开始查找的类
+     * @return 找到的所有字段对象列表
+     */
+    public static List<Field> getFieldsRecursive(Class<?> clazz) {
+        if (clazz == null) {
+            return Collections.emptyList();
+        }
+        // computeIfAbsent: 如果缓存里有，直接返回；如果没有，执行后面的 lambda 计算并存入
+        return FIELD_CACHE.computeIfAbsent(clazz, k -> {
+            List<Field> fields = new ArrayList<>();
+            Class<?> currentClass = k;
+
+            while (currentClass != null && currentClass != Object.class) {
+                // Collections.addAll(fields, currentClass.getDeclaredFields());
+                Field[] declaredFields = currentClass.getDeclaredFields();
+                for (Field field : declaredFields) {
+                    // 过滤掉编译器生成的合成字段 (如 this$0)
+                    if (field.isSynthetic()) {
+                        continue;
+                    }
+                    // 不需要静态字段
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        continue;
+                    }
+                    fields.add(field);
+                }
+                currentClass = currentClass.getSuperclass();
+            }
+            // 返回一个不可修改的 List，防止外部调用者修改缓存内容
+            return Collections.unmodifiableList(fields);
+        });
+    }
+
+    /**
      * 通用配置方法：将 @TableCol 注解的所有属性应用到 TableColumn
      *
      * @param column
@@ -77,35 +150,32 @@ public class JfxUtils {
      * @param fieldName
      */
     @SuppressWarnings({"unchecked"})
-    public static <S, T> void configColumn(TableColumn<S, T> column, Class<?> clazz, String fieldName, FilteredList<S> filteredList) {
-        try {
-            Field field = clazz.getDeclaredField(fieldName);
-            TableCol ann = field.getAnnotation(TableCol.class);
-
-            configColumn(column, ann, field, filteredList);
-            // --- B. 自动绑定 (数据部分) ---
-            // 约定：字段 "colId" 对应的方法是 "colIdProperty()"
-            String propertyMethodName = fieldName + "Property";
-
-            // 优化：在配置列时查找一次 Method 对象，而不是在每次渲染单元格时查找
-            Method method = clazz.getMethod(propertyMethodName);
-
-            column.setCellValueFactory(cellData -> {
-                try {
-                    // cellData.getValue() 获取的是行对象 (如 MainData 实例)
-                    Object rowData = cellData.getValue();
-                    // 调用 rowData.colIdProperty()
-                    return (ObservableValue) method.invoke(rowData);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return null;
-                }
-            });
-        } catch (NoSuchFieldException e) {
-            System.err.println("字段未找到: " + fieldName);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
+    public static <S, T> void configColumn(TableColumn<S, T> column, Class<?> clazz, String fieldName, FilteredList<S> filteredList) throws NoSuchMethodException {
+        Field field = getFieldRecursive(clazz, fieldName);
+        if (field == null) {
+            return;
         }
+        TableCol ann = field.getAnnotation(TableCol.class);
+
+        configColumn(column, ann, field, filteredList);
+        // --- B. 自动绑定 (数据部分) ---
+        // 约定：字段 "colId" 对应的方法是 "colIdProperty()"
+        String propertyMethodName = fieldName + "Property";
+
+        // 优化：在配置列时查找一次 Method 对象，而不是在每次渲染单元格时查找
+        Method method = clazz.getMethod(propertyMethodName);
+
+        column.setCellValueFactory(cellData -> {
+            try {
+                // cellData.getValue() 获取的是行对象 (如 MainData 实例)
+                Object rowData = cellData.getValue();
+                // 调用 rowData.colIdProperty()
+                return (ObservableValue) method.invoke(rowData);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        });
     }
 
     /**
@@ -214,7 +284,7 @@ public class JfxUtils {
      */
     public static <S, E> void createColumnsFromAnnotations(TableView<S> table, Class<S> clazz, FilteredList<S> filteredList) {
         // 获取所有声明的字段
-        Field[] fields = clazz.getDeclaredFields();
+        List<Field> fields = getFieldsRecursive(clazz);
 
         for (Field field : fields) {
             // 检查是否有 @TableCol 注解
@@ -243,7 +313,7 @@ public class JfxUtils {
             }
         }
         // “列宽自适应”策略 CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS 表格会自动调整所有列的宽度，手动设置的列宽将失效
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+        // table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         /*
         // 强制显示hbar 水平滚动条 vbar 垂直滚动条
         table.setStyle("-fx-hbar-policy: always;");

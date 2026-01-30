@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.bajins.tools.toolsjavafx.controller.ExcelDiffDbController">
+
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <!-- 1. 数据导入区 -->
+            <TitledPane text="1. 数据来源 (二选一)" collapsible="false">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="filePathField" promptText="未选择文件" editable="false" HBox.hgrow="ALWAYS"/>
+                    <Button text="选择 Excel" onAction="#handleSelectFile"/>
+                    <Separator orientation="VERTICAL"/>
+                    <Button text="粘贴文本数据" onAction="#handlePasteData"
+                            style="-fx-background-color: #2196F3; -fx-text-fill: white;"/>
+
+                    <Separator orientation="VERTICAL"/>
+                    <Button fx:id="btnPreview" text="预览" onAction="#handlePreviewData" disable="true"/>
+
+                    <Label fx:id="lblSourceStatus" text="未加载数据" textFill="#ff3333" style="-fx-font-weight: bold;"/>
+                </HBox>
+            </TitledPane>
+
+            <!-- 2. 数据库配置区 -->
+            <TitledPane text="2. 数据库配置" collapsible="false">
+                <!-- 使用 VBox 作为最外层容器，实现垂直分层 -->
+                <VBox spacing="10" alignment="CENTER_LEFT" xmlns:fx="http://javafx.com/fxml">
+                    <FlowPane hgap="15" vgap="10" alignment="CENTER_LEFT">
+                        <HBox alignment="CENTER_LEFT" spacing="5">
+                            <Label text="类型:"/>
+                            <ComboBox fx:id="dbTypeCombo" prefWidth="120"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="5">
+                            <Label text="IP:"/>
+                            <TextField fx:id="dbIpField" text="" promptText="127.0.0.1" prefWidth="150"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="5">
+                            <Label text="端口:"/>
+                            <TextField fx:id="dbPortField" text="" prefWidth="60"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="5">
+                            <Label text="库名:"/>
+                            <TextField fx:id="dbNameField" promptText="sys_db" prefWidth="150"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="5">
+                            <Label text="用户:"/>
+                            <TextField fx:id="dbUserField" text="" prefWidth="150"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="5">
+                            <Label text="密码:"/>
+                            <PasswordField fx:id="dbPasswordField" prefWidth="150"/>
+                        </HBox>
+                        <!-- 换行 -->
+                    </FlowPane>
+                    <!-- 按钮区域 (强制换行) -->
+                    <HBox alignment="CENTER" spacing="15">
+                        <Button fx:id="btnTestConn" text="测试连接" onAction="#handleTestConn"
+                                style="-fx-base: #e0e0e0;-fx-background-color: #ec96a2; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;"
+                                prefHeight="35" prefWidth="120"/>
+
+                        <Separator orientation="VERTICAL"/>
+
+                        <Button fx:id="btnRun" text="个人项目金额" onAction="#handleRun" disable="true"
+                                style="-fx-base: #e0e0e0;-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;"
+                                prefHeight="35" prefWidth="120"/>
+
+                        <Separator orientation="VERTICAL"/>
+
+                        <Button fx:id="btnWorkHourCount" text="工时统计" onAction="#handleWorkHourCount" disable="true"
+                                style="-fx-base: #e0e0e0;-fx-background-color: #83f321; -fx-text-fill: white;-fx-font-weight: bold; -fx-font-size: 14px;"
+                                prefHeight="35" prefWidth="120"/>
+                    </HBox>
+                </VBox>
+            </TitledPane>
+
+            <!-- 3. 操作按钮区 -->
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <Button fx:id="btnCopy" text="复制结果" onAction="#handleCopy" disable="true"/>
+                <Button fx:id="btnExport" text="导出列表" onAction="#handleExport" disable="true"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <!-- 新增：主界面搜索框 -->
+                <Label text="🔍 搜索结果:"/>
+                <TextField fx:id="txtMainSearch" promptText="输入关键词过滤..." prefWidth="200"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Button fx:id="btnFullscreen" text="全屏查看" onAction="#handleFullscreen" disable="true"
+                        style="-fx-background-color: #aea7a7; -fx-text-fill: white;-fx-font-weight: bold;"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Button fx:id="btnUtAmount" text="个人结案金额" onAction="#handleUtAmount"
+                        style="-fx-background-color: #2196F3; -fx-text-fill: white;" disable="true"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+                <!-- 全局状态栏 -->
+                <Label fx:id="statusLabel" text="就绪" textFill="#666666"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="mainTableView">
+            <!-- 如果是动态生成列，这里就不需要 <columns> -->
+            <!--<columns>
+                <TableColumn fx:id="tcId" text="ID (Excel)" prefWidth="100"/>
+                <TableColumn fx:id="tcName" text="名称 (Excel)" prefWidth="120"/>
+                <TableColumn fx:id="tcExtra" text="备注 (Excel)" prefWidth="120"/>
+                <TableColumn fx:id="tcDbVal" text="数据库值" prefWidth="150" style="-fx-text-fill: blue;"/>
+                <TableColumn fx:id="tcStatus" text="比对结果" prefWidth="200" style="-fx-font-weight: bold;"/>
+            </columns>-->
+            <placeholder>
+                <Label text="请选择 Excel 文件 或 点击粘贴数据"/>
+            </placeholder>
+        </TableView>
+    </center>
+
+</BorderPane>

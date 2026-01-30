@@ -30,7 +30,7 @@ public class UserAmountData {
 
     @TableCol(
             value = "用户区域",
-            width = 50,
+            width = 80,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
             alignment = "CENTER"
     )
@@ -70,7 +70,7 @@ public class UserAmountData {
 
     @TableCol(
             value = "总项目数",
-            width = 50,
+            width = 80,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
             alignment = "CENTER"
     )
@@ -78,7 +78,7 @@ public class UserAmountData {
 
     @TableCol(
             value = "主担项目数",
-            width = 50,
+            width = 80,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
             alignment = "CENTER"
     )
@@ -86,7 +86,7 @@ public class UserAmountData {
 
     @TableCol(
             value = "协从项目数",
-            width = 50,
+            width = 80,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
             alignment = "CENTER"
     )

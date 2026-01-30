@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.controlsfx.control.CheckComboBox?>
+<?import com.dlsc.gemsfx.daterange.DateRangePicker?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.bajins.tools.toolsjavafx.controller.WorkHourCountController">
+
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <!-- 条件录入区 -->
+            <TitledPane text="筛选条件" collapsible="false">
+                <FlowPane hgap="15" vgap="10" alignment="CENTER_LEFT">
+                    <HBox alignment="CENTER_LEFT" spacing="5">
+                        <DateRangePicker fx:id="datePicker" customRangeText="日期范围"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="5">
+                        <Label text="排产人:"/>
+                        <CheckComboBox fx:id="workerCombo" prefWidth="150"/>
+                    </HBox>
+                </FlowPane>
+            </TitledPane>
+
+            <!-- 操作按钮区 -->
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <Button fx:id="btnRun" text="查询" onAction="#handleRun"
+                        style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;"
+                        prefHeight="35" prefWidth="120"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Button fx:id="btnCopy" text="复制结果" onAction="#handleCopy" disable="true"/>
+                <Button fx:id="btnExport" text="导出列表" onAction="#handleExport" disable="true"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <!-- 新增：主界面搜索框 -->
+                <Label text="🔍 搜索结果:"/>
+                <TextField fx:id="txtMainSearch" promptText="输入关键词过滤..." prefWidth="200"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+                <!-- 全局状态栏 -->
+                <Label fx:id="statusLabel" text="就绪" textFill="#666666"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="mainTableView">
+            <placeholder>
+                <Label text="请先查询数据"/>
+            </placeholder>
+        </TableView>
+    </center>
+
+</BorderPane>

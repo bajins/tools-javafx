@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://www.w3.org/2001/XInclude">
+    <top>
+        <!--<fx:include source="header.fxml" fx:id="header"/>-->
+    </top>
+    <center>
+        <!--<fx:include source="content.fxml" fx:id="content"/>-->
+    </center>
+</BorderPane>

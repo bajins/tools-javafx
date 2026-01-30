@@ -7,9 +7,9 @@ import javafx.beans.property.StringProperty;
 
 /**
  *
- * @author bajin
+ * @author bajins
  */
-public class MainData {
+public class ProjectDevData {
     @TableCol(
             value = "用户编码",
             width = 100,
@@ -32,7 +32,7 @@ public class MainData {
 
     @TableCol(
             value = "用户区域",
-            width = 50,
+            width = 80,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
             alignment = "CENTER"
     )
@@ -123,42 +123,6 @@ public class MainData {
     private final StringProperty leadDevRegion;
 
     @TableCol(
-            value = "开发工时",
-            width = 120,
-            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
-            alignment = "CENTER",
-            numeric = true
-    )
-    private final StringProperty pmDevHours;
-
-    @TableCol(
-            value = "项目总工时",
-            width = 120,
-            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
-            alignment = "CENTER",
-            numeric = true
-    )
-    private final StringProperty pmPrjHours;
-
-    @TableCol(
-            value = "项目金额",
-            width = 120,
-            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
-            alignment = "CENTER",
-            numeric = true
-    )
-    private final StringProperty prjAmount;
-
-    @TableCol(
-            value = "个人金额",
-            width = 120,
-            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
-            alignment = "CENTER",
-            numeric = true
-    )
-    private final StringProperty ujAmount;
-
-    @TableCol(
             value = "主担部门编码",
             width = 100,
             // style = "-fx-font-weight: bold; -fx-text-fill: red;",
@@ -190,7 +154,25 @@ public class MainData {
     )
     private final StringProperty leadParentDeptName;
 
-    public MainData() {
+    @TableCol(
+            value = "开发工时",
+            width = 120,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER",
+            numeric = true
+    )
+    private final StringProperty pmDevHours;
+
+    @TableCol(
+            value = "项目总工时",
+            width = 120,
+            // style = "-fx-font-weight: bold; -fx-text-fill: red;",
+            alignment = "CENTER",
+            numeric = true
+    )
+    private final StringProperty pmPrjHours;
+
+    public ProjectDevData() {
         this.userCode = new SimpleStringProperty();
         this.userName = new SimpleStringProperty();
         this.devRegion = new SimpleStringProperty();
@@ -204,14 +186,12 @@ public class MainData {
         this.leadUserCode = new SimpleStringProperty();
         this.leadUserName = new SimpleStringProperty();
         this.leadDevRegion = new SimpleStringProperty();
-        this.pmDevHours = new SimpleStringProperty();
-        this.pmPrjHours = new SimpleStringProperty();
-        this.prjAmount = new SimpleStringProperty();
-        this.ujAmount = new SimpleStringProperty();
         this.leadDeptCode = new SimpleStringProperty();
         this.leadDeptName = new SimpleStringProperty();
         this.leadParentDeptCode = new SimpleStringProperty();
         this.leadParentDeptName = new SimpleStringProperty();
+        this.pmDevHours = new SimpleStringProperty();
+        this.pmPrjHours = new SimpleStringProperty();
     }
 
     public String getUserCode() {
@@ -318,38 +298,6 @@ public class MainData {
         return leadDevRegion;
     }
 
-    public String getPmDevHours() {
-        return pmDevHours.get();
-    }
-
-    public StringProperty pmDevHoursProperty() {
-        return pmDevHours;
-    }
-
-    public String getPmPrjHours() {
-        return pmPrjHours.get();
-    }
-
-    public StringProperty pmPrjHoursProperty() {
-        return pmPrjHours;
-    }
-
-    public String getPrjAmount() {
-        return prjAmount.get();
-    }
-
-    public StringProperty prjAmountProperty() {
-        return prjAmount;
-    }
-
-    public String getUjAmount() {
-        return ujAmount.get();
-    }
-
-    public StringProperty ujAmountProperty() {
-        return ujAmount;
-    }
-
     public String getLeadDeptCode() {
         return leadDeptCode.get();
     }
@@ -380,5 +328,21 @@ public class MainData {
 
     public StringProperty leadParentDeptNameProperty() {
         return leadParentDeptName;
+    }
+
+    public String getPmDevHours() {
+        return pmDevHours.get();
+    }
+
+    public StringProperty pmDevHoursProperty() {
+        return pmDevHours;
+    }
+
+    public String getPmPrjHours() {
+        return pmPrjHours.get();
+    }
+
+    public StringProperty pmPrjHoursProperty() {
+        return pmPrjHours;
     }
 }
