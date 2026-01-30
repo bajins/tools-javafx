@@ -190,6 +190,12 @@
         </dependency>-->
 
         <dependency>
+            <groupId>ca.weblite</groupId>
+            <artifactId>jdeploy-desktop-lib-javafx</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>${junit.version}</version>
@@ -204,11 +210,12 @@
     </dependencies>
 
     <build>
+        <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins -->
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.14.1</version>
                 <configuration>
                     <source>25</source>
                     <target>25</target>
@@ -222,7 +229,9 @@
                         <arg>--add-exports</arg>
                         <arg>javafx.graphics/javafx.scene=org.controlsfx.controls</arg>
                         <!-- 解决 JavaFX Graphics 的 Native Access 警告 -->
-                        <!--<arg>&#45;&#45;enable-native-access=javafx.graphics</arg>-->
+                        <!--<arg>&#45;&#45;enable-native-access=ALL-UNNAMED</arg>-->
+                        <arg>--add-opens</arg>
+                        <arg>java.base/sun.misc=ALL-UNNAMED</arg>
                     </compilerArgs>
                     <!-- 必须提供生成的模块类，对应 module-info.java 中的 provides 语句 -->
                     <!-- 对应idea设置 Settings → Build → Annotation Processors → Enable -->
@@ -239,6 +248,23 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.bajins.tools.toolsjavafx.Launcher</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
                 <configuration>
                     <transformers>
                         <transformer
@@ -250,56 +276,66 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.4</version>
                 <configuration>
                     <argLine>--add-opens javafx.controls/javafx.scene.control.skin=org.controlsfx.controls</argLine>
                     <argLine>--add-exports javafx.controls/javafx.scene.control.skin=org.controlsfx.controls</argLine>
                     <argLine>--add-opens javafx.graphics/javafx.scene=org.controlsfx.controls</argLine>
                     <argLine>--add-exports javafx.graphics/javafx.scene=org.controlsfx.controls</argLine>
                     <!-- 解决 JavaFX Graphics 的 Native Access 警告 -->
-                    <argLine>--enable-native-access=javafx.graphics</argLine>
+                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+                    <argLine>--add-opens=java.base/sun.misc=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
+            <!-- Source: https://mvnrepository.com/artifact/org.openjfx/javafx-maven-plugin -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <executions>
-                    <execution>
-                        <!-- Default configuration for running with: mvn clean javafx:run -->
-                        <id>default-cli</id>
-                        <configuration>
-                            <mainClass>
-                                com.bajins.tools.toolsjavafx/com.bajins.tools.toolsjavafx.ToolsjavafxApplication
-                            </mainClass>
-                            <launcher>app</launcher>
-                            <jlinkZipName>app</jlinkZipName>
-                            <jlinkImageName>app</jlinkImageName>
-                            <noManPages>true</noManPages>
-                            <stripDebug>true</stripDebug>
-                            <noHeaderFiles>true</noHeaderFiles>
-                            <options>
-                                <!-- 解决 JavaFX Graphics 的 Native Access 警告 -->
-                                <option>--enable-native-access=javafx.graphics</option>
-                                <!-- 从 Java 9 开始，JavaFX 将其内部实现（如 skin 包）进行了封装。-->
-                                <!-- ControlsFX 的 TableFilter 功能需要通过反射访问 TableView 的私有内部组件 TableHeaderRow 来插入筛选按钮 -->
-                                <!-- ，但 JavaFX 默认不允许外部模块访问这些受保护的内部 API -->
-                                <option>--add-opens</option>
-                                <option>javafx.controls/javafx.scene.control.skin=org.controlsfx.controls</option>
-                                <option>--add-exports</option>
-                                <option>javafx.controls/javafx.scene.control.skin=org.controlsfx.controls</option>
-                                <option>--add-opens</option>
-                                <option>javafx.graphics/javafx.scene=org.controlsfx.controls</option>
-                                <option>--add-exports</option>
-                                <option>javafx.graphics/javafx.scene=org.controlsfx.controls</option>
-                                <!-- ControlsFX 作为非模块化 jar 运行 -->
-                                <!--<option>&#45;&#45;add-opens</option>
-                                <option>javafx.controls/javafx.scene.control.skin=ALL-UNNAMED</option>
-                                <option>&#45;&#45;add-opens</option>
-                                <option>javafx.graphics/javafx.scene=ALL-UNNAMED</option>-->
-                            </options>
-                        </configuration>
-                    </execution>
+                    <!-- 支持使用 mvn clean package 命令执行jlink打包 -->
+                    <!--<execution>
+                        <id>jlink</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jlink</goal>
+                        </goals>
+                    </execution>-->
                 </executions>
+                <!-- 使用 mvn clean javafx:run 运行时的默认配置 -->
+                <configuration>
+                    <mainClass>
+                        com.bajins.tools.toolsjavafx/com.bajins.tools.toolsjavafx.ToolsjavafxApplication
+                    </mainClass>
+                    <launcher>app</launcher>
+                    <jlinkZipName>app</jlinkZipName>
+                    <jlinkImageName>app</jlinkImageName>
+                    <noManPages>true</noManPages>
+                    <stripDebug>true</stripDebug>
+                    <noHeaderFiles>true</noHeaderFiles>
+                    <options>
+                        <!-- 解决 JavaFX Graphics 的 Native Access 警告 -->
+                        <option>--enable-native-access=ALL-UNNAMED</option>
+                        <!-- 从 Java 9 开始，JavaFX 将其内部实现（如 skin 包）进行了封装。-->
+                        <!-- ControlsFX 的 TableFilter 功能需要通过反射访问 TableView 的私有内部组件 TableHeaderRow 来插入筛选按钮 -->
+                        <!-- ，但 JavaFX 默认不允许外部模块访问这些受保护的内部 API -->
+                        <option>--add-opens</option>
+                        <option>javafx.controls/javafx.scene.control.skin=org.controlsfx.controls</option>
+                        <option>--add-exports</option>
+                        <option>javafx.controls/javafx.scene.control.skin=org.controlsfx.controls</option>
+                        <option>--add-opens</option>
+                        <option>javafx.graphics/javafx.scene=org.controlsfx.controls</option>
+                        <option>--add-exports</option>
+                        <option>javafx.graphics/javafx.scene=org.controlsfx.controls</option>
+                        <!-- ControlsFX 作为非模块化 jar 运行 -->
+                        <option>--add-opens</option>
+                        <option>javafx.controls/javafx.scene.control.skin=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>javafx.graphics/javafx.scene=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>java.base/sun.misc=ALL-UNNAMED</option>
+                    </options>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>io.avaje</groupId>
@@ -315,6 +351,138 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Source: https://mvnrepository.com/artifact/org.moditect/moditect-maven-plugin -->
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+                <version>1.3.0.Final</version>
+                <executions>
+                    <execution>
+                        <id>add-module-info-to-sparsebitset</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-module-info</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/modules</outputDirectory>
+                            <overwriteExistingFiles>true</overwriteExistingFiles>
+                            <modules>
+                                <!-- SparseBitSet -->
+                                <module>
+                                    <artifact>
+                                        <groupId>com.zaxxer</groupId>
+                                        <artifactId>SparseBitSet</artifactId>
+                                        <version>1.3</version>
+                                    </artifact>
+                                    <moduleInfoSource>
+                                        module com.zaxxer.sparsebitset {
+                                        exports com.zaxxer.sparsebits;
+                                        requires java.base;
+                                        }
+                                    </moduleInfoSource>
+                                </module>
+
+                                <!-- jdeploy-desktop-lib-javafx -->
+                                <module>
+                                    <artifact>
+                                        <groupId>ca.weblite</groupId>
+                                        <artifactId>jdeploy-desktop-lib-javafx</artifactId>
+                                        <version>1.0.2</version>
+                                    </artifact>
+                                    <moduleInfoSource>
+                                        module jdeploy.desktop.lib.javafx {
+                                        exports ca.weblite.jdeploy.app.javafx;
+                                        requires javafx.graphics;
+                                        requires javafx.controls;
+                                        requires java.desktop;
+                                        }
+                                    </moduleInfoSource>
+                                </module>
+                            </modules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--<plugin>
+                &lt;!&ndash; Source: https://mvnrepository.com/artifact/io.github.bsels/javafx-maven-plugin &ndash;&gt;
+                <groupId>io.github.bsels</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>1.2.2</version>
+                <executions>
+                    &lt;!&ndash;<execution>
+                        <id>generate-fxml-sources</id>
+                        <goals>
+                            <goal>fxml-source</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <fxmlDirectory>
+                                ${project.basedir}/src/main/resources/com/bajins/tools/toolsjavafx/fxml
+                            </fxmlDirectory>
+                            <packageName>${project.groupId}.ui.generated</packageName>
+                            <generatedSourceDirectory>
+                                ${project.build.directory}/generated-sources/fxml
+                            </generatedSourceDirectory>
+                        </configuration>
+                    </execution>&ndash;&gt;
+
+                    &lt;!&ndash; 打包成 JLink 镜像 &ndash;&gt;
+                    <execution>
+                        <id>jlink-image</id>
+                        <goals>
+                            <goal>jlink</goal>
+                        </goals>
+                        <phase>process-classes</phase>
+                        <configuration>
+                            &lt;!&ndash; Mandatory &ndash;&gt;
+                            <mainClass>com.bajins.tools.toolsjavafx/com.bajins.tools.toolsjavafx.ToolsjavafxApplication</mainClass>
+
+                            &lt;!&ndash; Optional – customise the image &ndash;&gt;
+                            &lt;!&ndash; path to jlink &ndash;&gt;
+                            <jlinkExecutable>jlink</jlinkExecutable>
+                            &lt;!&ndash; custom JavaFX jmods &ndash;&gt;
+                            <jmodsPath>${java.home}/jmods</jmodsPath>
+                            &lt;!&ndash; output folder &ndash;&gt;
+                            <jlinkImageName>${project.build.directory}</jlinkImageName>
+                            &lt;!&ndash; ZIP name (omit to skip) &ndash;&gt;
+                            <jlinkZipName>${project.artifactId}-${project.version}</jlinkZipName>
+
+                            &lt;!&ndash; Launcher configuration &ndash;&gt;
+                            &lt;!&ndash; name of the launcher &ndash;&gt;
+                            <launcher>com.bajins.tools.toolsjavafx.Launcher</launcher>
+                            &lt;!&ndash;<options>
+                                <option>-Xmx512m</option>
+                                <option>-Dmy.prop=value</option>
+                            </options>
+                            <commandlineArgs>&#45;&#45;theme dark</commandlineArgs>&ndash;&gt;
+
+                            &lt;!&ndash; Binary files to ship alongside the launcher &ndash;&gt;
+                            &lt;!&ndash;<additionalBinaries>
+                                <additionalBinary>
+                                    <name>ffmpeg</name>
+                                    <location>${project.basedir}/native/ffmpeg.exe</location>
+                                    <mappedJavaProperty>ffmpeg.path</mappedJavaProperty>
+                                </additionalBinary>
+                            </additionalBinaries>&ndash;&gt;
+
+                            &lt;!&ndash; Image optimisation flags &ndash;&gt;
+                            <stripDebug>true</stripDebug>
+                            <stripJavaDebugAttributes>true</stripJavaDebugAttributes>
+                            &lt;!&ndash; 0‑9 or 1/2 (deprecated) &ndash;&gt;
+                            <compress>zip-9</compress>
+                            <noHeaderFiles>true</noHeaderFiles>
+                            <noManPages>true</noManPages>
+                            <bindServices>true</bindServices>
+                            <ignoreSigningInformation>false</ignoreSigningInformation>
+                            <jlinkVerbose>false</jlinkVerbose>
+
+                            &lt;!&ndash; Logging format (applied to conf/logging.properties) &ndash;&gt;
+                            <loggingFormat>%1$tF %1$tT %4$s %2$s - %5$s%6$s%n</loggingFormat>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>-->
         </plugins>
     </build>
 </project>

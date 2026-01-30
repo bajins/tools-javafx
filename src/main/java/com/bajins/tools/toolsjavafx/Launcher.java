@@ -24,5 +24,6 @@ public class Launcher {
                 ClassLoader.getSystemClassLoader()
         );*/
         Application.launch(ToolsjavafxApplication.class, args);
+        // ToolsjavafxApplication.main(args);
     }
 }

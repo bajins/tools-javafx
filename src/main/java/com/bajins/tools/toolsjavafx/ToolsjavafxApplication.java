@@ -1,5 +1,7 @@
 package com.bajins.tools.toolsjavafx;
 
+import ca.weblite.jdeploy.app.JDeployOpenHandler;
+import ca.weblite.jdeploy.app.javafx.JDeployFXApp;
 import com.bajins.tools.toolsjavafx.utils.AppContext;
 import com.bajins.tools.toolsjavafx.view.ViewNavigator;
 import io.avaje.inject.BeanScope;
@@ -12,7 +14,10 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.util.List;
 import java.util.ListResourceBundle;
 import java.util.Objects;
 
@@ -32,6 +37,8 @@ public class ToolsjavafxApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) throws IOException {
+        System.setProperty("controlsfx.locale", "zh");
+
         // ViewNavigator.setMainStage(primaryStage);
         // ViewNavigator.loadScene("excel-diff-db.fxml");
 
@@ -74,7 +81,30 @@ public class ToolsjavafxApplication extends Application {
         primaryStage.setX((screenBounds.getWidth() - windowWidth) / 2);
         primaryStage.setY((screenBounds.getHeight() - windowHeight) / 2);
 
-        System.setProperty("controlsfx.locale", "zh");
+        // Register the open handler
+        JDeployFXApp.setOpenHandler(new JDeployOpenHandler() {
+            @Override
+            public void openFiles(List<File> files) {
+                for (File file : files) {
+                    System.out.println("Opening file: " + file.getAbsolutePath());
+                }
+            }
+
+            @Override
+            public void openURIs(List<URI> uris) {
+                for (URI uri : uris) {
+                    System.out.println("Handling URI: " + uri);
+                }
+            }
+
+            @Override
+            public void appActivated() {
+                System.out.println("激活应用程序 - 将窗口移至前台");
+                primaryStage.setIconified(false);
+                primaryStage.toFront();
+                primaryStage.requestFocus();
+            }
+        });
 
         primaryStage.show();
     }

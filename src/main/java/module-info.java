@@ -15,6 +15,8 @@ module com.bajins.tools.toolsjavafx {
     requires org.apache.commons.lang3;
     requires io.avaje.inject;
     requires javax.inject;
+    requires jdeploy.desktop.lib.core;
+    requires jdeploy.desktop.lib.javafx;
 
     opens com.bajins.tools.toolsjavafx to javafx.fxml, org.controlsfx.controls;
     exports com.bajins.tools.toolsjavafx;
