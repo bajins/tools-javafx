@@ -4,7 +4,10 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.text.TextAlignment;
@@ -12,6 +15,9 @@ import javafx.stage.Popup;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
+import org.controlsfx.control.PopOver;
+import org.controlsfx.dialog.ExceptionDialog;
+import org.controlsfx.dialog.ProgressDialog;
 
 public class ToastUtils {
 
@@ -80,21 +86,28 @@ public class ToastUtils {
     }
 
     /**
+     * 显示信息弹窗
      *
-     * @param message
+     * @param message 弹窗内容
      */
     public static void alertInfo(String message) {
         new Alert(Alert.AlertType.INFORMATION, message).show();
     }
 
+    /**
+     * 显示警告弹窗
+     *
+     * @param message 弹窗内容
+     */
     public static void alertWarning(String message) {
         new Alert(Alert.AlertType.WARNING, message).show();
     }
 
     /**
+     * 显示错误弹窗
      *
-     * @param header
-     * @param content
+     * @param header 弹窗标题
+     * @param content 弹窗内容
      */
     public static void alertError(String header, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -102,5 +115,134 @@ public class ToastUtils {
         alert.setHeaderText(header);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    /**
+     * 显示通知弹窗（信息）
+     *
+     * @param title 弹窗标题
+     * @param content 弹窗内容
+     */
+    public static void showNotifyInfo(String title, String content) {
+        Notifications.create().title(title).text(content)
+                // 位置
+                .position(Pos.BOTTOM_RIGHT)
+                .showInformation();
+    }
+
+    /**
+     * 显示通知弹窗（错误）
+     *
+     * @param title 弹窗标题
+     * @param content 弹窗内容
+     */
+    public static void showNotifyError(String title, String content) {
+        Notifications.create().title(title).text(content)
+                // 位置
+                .position(Pos.BOTTOM_RIGHT)
+                .showError();
+    }
+
+    /**
+     * 显示通知弹窗（警告）
+     *
+     * @param title 弹窗标题
+     * @param content 弹窗内容
+     */
+    public static void showNotifyWarning(String title, String content) {
+        Notifications.create().title(title).text(content)
+                // 位置
+                .position(Pos.BOTTOM_RIGHT)
+                .showWarning();
+    }
+
+    /**
+     * 显示通知弹窗（确认）
+     *
+     * @param title 弹窗标题
+     * @param content 弹窗内容
+     */
+    public static void showNotifyConfirm(String title, String content) {
+        Notifications.create().title(title).text(content)
+                // 位置
+                .position(Pos.BOTTOM_RIGHT)
+                .showConfirm();
+    }
+
+    /**
+     * 显示气泡弹窗
+     *
+     * @param owner 弹窗绑定的父窗口
+     * @param message 弹窗内容
+     */
+    public static void showPopOver(Window owner, String message) {
+        // 创建气泡内容
+        Label content = new Label(message);
+        content.setPadding(new Insets(10));
+        showPopOver(owner, content);
+    }
+
+    /**
+     * 显示气泡弹窗
+     *
+     * @param owner 弹窗绑定的父窗口
+     * @param content 弹窗内容
+     */
+    public static void showPopOver(Window owner, Node content) {
+        PopOver popOver = new PopOver();
+        popOver.setContentNode(content);
+        // 允许拖拽分离
+        popOver.setDetachable(true);
+        popOver.show(owner);
+    }
+
+    /**
+     * 显示异常弹窗
+     *
+     * @param title 弹窗标题
+     * @param header 弹窗头内容
+     * @param e 异常对象
+     */
+    public static void showExceptionDialog(String title, String header, String content, Exception e) {
+        ExceptionDialog dialog = new ExceptionDialog(e);
+        dialog.setTitle(title);
+        dialog.setHeaderText(header);
+        dialog.setContentText(content);
+        dialog.showAndWait();
+    }
+
+    /**
+     * 显示异常弹窗
+     *
+     * @param title 弹窗标题
+     * @param header 弹窗头内容
+     * @param e 异常对象
+     */
+    public static void showExceptionDialog(String title, String header, Exception e) {
+        showExceptionDialog(title, header, e.getMessage(), e);
+    }
+
+    /**
+     * 显示异常弹窗
+     *
+     * @param title 弹窗标题
+     * @param e 异常对象
+     */
+    public static void showExceptionDialog(String title, Exception e) {
+        showExceptionDialog(title, e.getMessage(), e);
+    }
+
+    /**
+     * 显示进度弹窗
+     *
+     * @param title 弹窗标题
+     * @param content 弹窗内容
+     */
+    public static void showProgressDialog(String title, String content, Task<Void> task) {
+        ProgressDialog dialog = new ProgressDialog(task);
+        dialog.setTitle(title);
+        dialog.setContentText(content);
+        new Thread(task).start();
+        dialog.show(); // 任务结束时弹窗会自动关闭（视配置而定）
     }
 }

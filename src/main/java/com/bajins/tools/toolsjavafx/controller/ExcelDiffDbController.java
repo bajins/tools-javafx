@@ -35,6 +35,9 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Cell;
+import org.controlsfx.control.Notifications;
+import org.controlsfx.control.PopOver;
+import org.controlsfx.dialog.ExceptionDialog;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -154,7 +157,7 @@ public class ExcelDiffDbController implements Initializable {
     public void handlePasteData() {
         // 获取父窗口 (Main Stage)
         // 注意：必须确保此时 filePathField 已经加载到场景中（在按钮点击事件中是肯定的）
-        javafx.stage.Window parentWindow = filePathField.getScene().getWindow();
+        Window parentWindow = filePathField.getScene().getWindow();
 
         // 创建一个包含 TextArea 的对话框
         Dialog<String> dialog = new Dialog<>();
@@ -274,7 +277,7 @@ public class ExcelDiffDbController implements Initializable {
         } catch (Exception e) {
             lblSourceStatus.setText("加载失败");
             lblSourceStatus.setTextFill(Color.RED);
-            ToastUtils.alertError("加载失败", e.getMessage());
+            ToastUtils.showExceptionDialog("加载失败", e);
             e.printStackTrace();
         }
     }
@@ -289,12 +292,14 @@ public class ExcelDiffDbController implements Initializable {
         }
         // 获取父窗口 (Main Stage)
         // 注意：必须确保此时 filePathField 已经加载到场景中（在按钮点击事件中是肯定的）
-        javafx.stage.Window parentWindow = filePathField.getScene().getWindow();
+        Window parentWindow = filePathField.getScene().getWindow();
 
         // 创建新窗口
         Stage previewStage = new Stage();
         previewStage.setTitle("数据预览 (共 " + cachedData.size() + " 条)");
-        // 允许同时操作主界面，如果是 APPLICATION_MODAL 则必须关闭预览才能操作主界面
+        // NONE 非模态 对话框不会阻塞其他任何窗口，用户可以随意切换焦点（默认行为）
+        // WINDOW_MODAL 窗口模态 仅阻塞父窗口（Owner Window），但允许用户与其他应用程序窗口交互
+        // APPLICATION_MODAL 应用模态 阻塞整个应用程序的所有窗口，必须关闭此对话框才能操作其他窗口
         previewStage.initModality(Modality.NONE);
 
         // 设置 Owner (关键：确立父子关系，使模态和居中生效)
@@ -377,7 +382,8 @@ public class ExcelDiffDbController implements Initializable {
 
             ToastUtils.alertInfo("数据库连接测试成功");
         } catch (SQLException e) {
-            ToastUtils.alertError("数据库连接测试失败", e.getMessage());
+            e.printStackTrace();
+            ToastUtils.showExceptionDialog("数据库连接测试失败", e);
         }
     }
 
@@ -613,7 +619,7 @@ public class ExcelDiffDbController implements Initializable {
 
                 // 3. 降序：用 b2 比较 b1
                 return b2.compareTo(b1);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException ignored) {
                 // 4. 如果不是数字，回退到字符串降序
                 return v2.compareTo(v1);
             }
@@ -699,7 +705,7 @@ public class ExcelDiffDbController implements Initializable {
             });
         } catch (IOException e) {
             e.printStackTrace();
-            ToastUtils.alertError("错误", e.getMessage());
+            ToastUtils.showExceptionDialog("错误", e);
         }
     }
 
@@ -710,7 +716,7 @@ public class ExcelDiffDbController implements Initializable {
             ViewNavigator.loadSceneMaxWindow("work-hour-count.fxml", btnWorkHourCount.getText(), parentWindow, null);
         } catch (IOException e) {
             e.printStackTrace();
-            ToastUtils.alertError("错误", e.getMessage());
+            ToastUtils.showExceptionDialog("错误", e);
         }
     }
 

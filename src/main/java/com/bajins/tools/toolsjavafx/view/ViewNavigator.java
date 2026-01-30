@@ -4,6 +4,8 @@ import com.bajins.tools.toolsjavafx.utils.AppContext;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.DialogEvent;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
@@ -66,6 +68,12 @@ public class ViewNavigator {
         // 3. 创建 Stage
         Stage stage = new Stage();
         stage.setTitle(title);
+        // NONE 非模态 对话框不会阻塞其他任何窗口，用户可以随意切换焦点（默认行为）
+        // WINDOW_MODAL 窗口模态 仅阻塞父窗口（Owner Window），但允许用户与其他应用程序窗口交互
+        // APPLICATION_MODAL 应用模态 阻塞整个应用程序的所有窗口，必须关闭此对话框才能操作其他窗口
+        stage.initModality(Modality.APPLICATION_MODAL);
+        // 是否允许手动调整大小
+        stage.setResizable(true);
 
         if (parentWindow != null) {
             stage.initOwner(parentWindow);
@@ -78,6 +86,18 @@ public class ViewNavigator {
         // 4. 设置 Scene 并显示
         Scene scene = new Scene(root);
         stage.setScene(scene);
+
+        // 触发即将显示事件
+        // Event.fireEvent(stage, new DialogEvent(stage, DialogEvent.DIALOG_SHOWING));
+        // 注册事件监听器
+        /*stage.addEventHandler(DialogEvent.DIALOG_SHOWING, event -> {
+
+        });
+
+        stage.addEventHandler(DialogEvent.DIALOG_SHOWN, event -> {
+
+        });*/
+
         stage.show();
     }
 

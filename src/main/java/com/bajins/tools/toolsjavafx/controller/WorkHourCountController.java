@@ -83,7 +83,7 @@ public class WorkHourCountController implements Initializable {
                 workers.add(entity.getStr("user_code") + "-" + entity.getStr("user_name"));
             }
         } catch (SQLException e) {
-            ToastUtils.alertError("查询排产人失败", e.getMessage());
+            ToastUtils.showExceptionDialog("查询排产人失败", e);
         }
         workerCombo.getItems().addAll(workers);
 
@@ -228,7 +228,7 @@ public class WorkHourCountController implements Initializable {
             btnCopy.setDisable(true);
             btnExport.setDisable(true);
             statusLabel.setText("查询失败");
-            ToastUtils.alertError("查询项目详情失败", e.getMessage());
+            ToastUtils.showExceptionDialog("查询项目详情失败", e);
         } finally {
             // btnRun.setDisable(true);
         }

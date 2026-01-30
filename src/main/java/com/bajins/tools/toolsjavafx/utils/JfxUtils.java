@@ -76,7 +76,7 @@ public class JfxUtils {
             BigDecimal b1 = new BigDecimal(s1.trim());
             BigDecimal b2 = new BigDecimal(s2.trim());
             return b1.compareTo(b2);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ignored) {
             // 3. 如果解析失败（比如包含字母），回退到默认的字符串比较
             return s1.compareTo(s2);
         }
@@ -97,7 +97,7 @@ public class JfxUtils {
             try {
                 // 尝试在当前类中找
                 return currentClass.getDeclaredField(fieldName);
-            } catch (NoSuchFieldException e) {
+            } catch (NoSuchFieldException ignored) {
                 // 当前类没找到，继续去父类找
                 currentClass = currentClass.getSuperclass();
             }
@@ -171,8 +171,7 @@ public class JfxUtils {
                 Object rowData = cellData.getValue();
                 // 调用 rowData.colIdProperty()
                 return (ObservableValue) method.invoke(rowData);
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception ignored) {
                 return null;
             }
         });
@@ -254,7 +253,7 @@ public class JfxUtils {
             java.lang.reflect.Method method = null;
             try {
                 method = clazz.getMethod(propertyMethodName);
-            } catch (NoSuchMethodException e) {
+            } catch (NoSuchMethodException ignored) {
             }
             if (method != null) {
                 java.lang.reflect.Method finalMethod = method;
@@ -266,7 +265,7 @@ public class JfxUtils {
                     // 实际项目中可以用 PropertyReferenceFactory 或更严谨的反射
                     try {
                         return (javafx.beans.value.ObservableValue) finalMethod.invoke(rowData);
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                         return null;
                     }
                 });
@@ -387,7 +386,7 @@ public class JfxUtils {
                     if (port >= 0 && port <= 65535) {
                         return change; // 合法，允许修改
                     }
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException ignored) {
                     // 解析失败（比如数字过大），拒绝
                 }
             }

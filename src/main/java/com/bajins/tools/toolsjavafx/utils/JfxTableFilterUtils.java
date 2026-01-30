@@ -100,7 +100,7 @@ public class JfxTableFilterUtils {
                         return true;
                     }
 
-                } catch (Exception e) {
+                } catch (Exception ignored) {
                     // 忽略反射异常，继续检查下一个字段
                 }
                 return false;
@@ -550,7 +550,7 @@ public class JfxTableFilterUtils {
                             return true;
                         }
 
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                         // 忽略反射异常，继续检查下一个字段
                     }
                 }
